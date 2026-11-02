@@ -10,6 +10,10 @@ const env = process.env;
 
 export const config = {
   port: Number(env.PORT ?? 8080),
+  // Adresse, auf der die App lauscht (leer = alle). Hinter einem Proxy auf einem anderen Server: 0.0.0.0
+  host: env.HOST || undefined,
+  // Proxys, deren X-Forwarded-For übernommen wird (Express „trust proxy“), z. B. 'loopback,10.0.0.5'
+  trustProxy: env.TRUST_PROXY || 'loopback',
   weewxDb: resolve(ROOT, env.WEEWX_DB ?? 'data/weewx.sdb'),
   appDb: resolve(ROOT, env.APP_DB ?? 'data/app.db'),
   jobs: env.JOBS !== '0',

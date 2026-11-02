@@ -28,5 +28,5 @@ npm run dev                       # http://localhost:8080
 
 Benötigt Node ≥ 24 und eine Kopie von `weewx.sdb` in `data/`.
 
-Alles Weitere für die Entwicklung – Aufbau, Datenmodell, Regeln, Umzug – steht in
-[PROJEKTWISSEN.md](PROJEKTWISSEN.md).
+Installation auf dem Debian-Server: [deploy/INSTALL.md](deploy/INSTALL.md).
+Alles Weitere für die Entwicklung – Aufbau, Datenmodell, Regeln – steht in [PROJEKTWISSEN.md](PROJEKTWISSEN.md).

@@ -1,0 +1,8 @@
+[Unit]
+Description=Bildschirm an Schultagen um 07:45 einschalten (nicht Juli/August)
+
+[Timer]
+OnCalendar=Mon..Fri *-01..06,09..12-* 07:45:00
+
+[Install]
+WantedBy=timers.target

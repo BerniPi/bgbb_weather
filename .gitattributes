@@ -1,0 +1,4 @@
+# Skripte und Konfiguration für den Linux-Server immer mit LF auschecken
+*.sh text eol=lf
+*.py text eol=lf
+deploy/config/* text eol=lf

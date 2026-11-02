@@ -16,6 +16,7 @@ Vantage Pro2 ISS ──868 MHz──> Meteostick (USB)
               Node-App ──liest──────┘   + app.db (Bodensee, Sturmwarnung, Status)
                 ├─ Homepage, Export, API
                 └─ /schule ◄── Chromium-Kiosk
+   Caddy (HTTPS) auf einem anderen Server ──> Debian-Box :8080
 ```
 
 | Technik | Wofür |
@@ -41,7 +42,8 @@ FTP → `import.php` → MySQL → PHP-Seiten. Ordner daneben: `../wetter`, `../
 
 Kein Test-Framework, keine Typprüfung, kein Build. Prüfen = Server starten, Seiten und `/api/v1/*` aufrufen.
 
-Konfiguration über `.env` (Vorlage `.env.example`): `PORT`, `WEEWX_DB`, `APP_DB`, `JOBS` (0 = keine Abrufe),
+Konfiguration über `.env` (Vorlage `.env.example`): `PORT`, `HOST`, `TRUST_PROXY` (IP des Reverse-Proxys),
+`WEEWX_DB`, `APP_DB`, `JOBS` (0 = keine Abrufe),
 `MQTT_URL`/`MQTT_TOPIC` (Livewerte), `LIVE_SIM=1` (simulierte Livewerte für die Entwicklung).
 Lokal: `data/weewx.sdb` = Kopie vom Pi (`/var/lib/weewx/weewx.sdb`), `data/app.db` aus der Migration.
 `data/`, `*.sdb`, `*.db`, `*.sql`, `.env` sind nicht im Repo.
@@ -163,15 +165,22 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 - **Vorschau im Claude-Desktop-Browser:** Server selbst starten (`npm run dev`) und `http://localhost:8080` öffnen
   (keine `launch.json` im Projekt).
 
-## Betrieb und Umzug (Plan)
+## Betrieb und Umzug
 
-1. Pi läuft weiter, bis alles bereit ist.
-2. Debian-Box: weewx 5 + Erweiterung `weewx-meteostick` (EU, ISS-Kanal 1, Regenwippe 0,2 mm), SQLite,
-   Wunderground in `[StdRESTful]`. Node-App als systemd-Dienst, Caddy/nginx davor.
-3. Stichtag: weewx am Pi stoppen, `weewx.sdb` kopieren, Meteostick umstecken (puffert nicht → Lücke
-   von Minuten), DNS und Kiosk umstellen.
-4. Kiosk: Chromium `--kiosk http://localhost:8080/schule`; Bildschirm Mo–Fr 07:45–16:45 außer Juli/August
-   per `xset dpms` / `wlr-randr` / HDMI-CEC (`cec-client`) statt `tvservice`.
+Schritt-für-Schritt-Anleitung inkl. Umzugstag: [deploy/INSTALL.md](deploy/INSTALL.md).
+
+| Datei | Zweck |
+|-------|-------|
+| `deploy/setup-server.sh <proxy-ip>` | Node 24, weewx 5 + Meteostick/MQTT-Erweiterung, Mosquitto, Benutzer `wetter`, `.env`, Dienste |
+| `deploy/weewx-configure.py` | setzt weewx.conf (Station, Meteostick, US-Einheiten, MQTT, Wunderground, Berichte aus); `--conf` zum Testen |
+| `deploy/setup-kiosk.sh cec|wlr|none` | Benutzer `kiosk`, Autologin tty1, cage + Chromium, Bildschirm-Timer |
+| `deploy/bin/*` | installiert als `bgbb-kiosk`, `bgbb-screen`, `bgbb-backup`, `bgbb-update` |
+| `deploy/config/*` | systemd-Units und Timer, Mosquitto (nur localhost), Getty-Autologin, Caddyfile-Vorlage für den Proxy |
+
+Server-Pfade: App `/opt/bgbb_weather` (Git-Klon, root), Daten `/var/lib/bgbb-weather` (Benutzer `wetter`),
+Archiv `/var/lib/weewx/weewx.sdb` (weewx, App liest über Gruppe `weewx`), Sicherungen `/var/backups/bgbb-weather`.
+Bildschirm: ein Mo–Fr 07:45 außer Juli/August, aus 16:45 (systemd-Timer, wie der alte Cronjob).
+`.gitattributes` erzwingt LF für Skripte und `deploy/config`.
 
 ## Livewerte
 
@@ -196,7 +205,7 @@ Die Seite fällt nach 30 s ohne Paket auf die minütlichen Werte zurück.
 
 | Thema | Hinweis |
 |-------|---------|
-| Umzug auf Debian | siehe „Betrieb und Umzug“; Livewerte mit echter Station prüfen |
+| Umzug auf Debian | Skripte nur per Syntaxprüfung getestet; am echten Gerät prüfen: weewx-Paketinstallation, Meteostick, MQTT-Pakete, cage/CEC |
 
 ## Arbeitsweise
 

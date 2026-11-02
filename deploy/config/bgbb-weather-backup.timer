@@ -1,0 +1,9 @@
+[Unit]
+Description=BGBB Wetter – tägliche Sicherung
+
+[Timer]
+OnCalendar=*-*-* 03:15
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,24 @@
+[Unit]
+Description=BGBB Wetter – Homepage, API und Schaufenster-Anzeige
+After=network-online.target mosquitto.service weewx.service
+Wants=network-online.target
+
+[Service]
+User=wetter
+Group=wetter
+SupplementaryGroups=weewx
+WorkingDirectory=/opt/bgbb_weather
+ExecStart=/usr/bin/node src/server.js
+Environment=NODE_ENV=production
+Restart=always
+RestartSec=5
+
+# Abschottung: nur das eigene Datenverzeichnis ist beschreibbar
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/bgbb-weather
+
+[Install]
+WantedBy=multi-user.target

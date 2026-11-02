@@ -1,0 +1,21 @@
+# Vorlage für den Reverse-Proxy auf dem ANDEREN Server (nicht auf der Debian-Box).
+# {{DOMAIN}} und {{UPSTREAM}} ersetzen, z. B. wetter.bgblumenstrasse.at und 10.0.0.20:8080.
+# Caddy holt das HTTPS-Zertifikat selbst; die Domain muss auf den Proxy zeigen.
+# Server-Sent Events (/api/v1/live) leitet Caddy ohne weitere Einstellung sofort weiter.
+{{DOMAIN}} {
+	encode gzip
+
+	# Adressen der alten PHP-Seite weiterleiten (Lesezeichen, Suchmaschinen)
+	redir /index.php / permanent
+	redir /day.php /verlauf?zeitraum=tag permanent
+	redir /week.php /verlauf?zeitraum=woche permanent
+	redir /month.php /verlauf?zeitraum=monat permanent
+	redir /year.php /verlauf?zeitraum=jahr permanent
+	redir /summary.html /klima permanent
+	redir /station.html /station permanent
+	redir /export.php /export permanent
+	redir /schule.php /schule/ permanent
+	redir /schule_neu.php /schule/ permanent
+
+	reverse_proxy {{UPSTREAM}}
+}

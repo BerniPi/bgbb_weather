@@ -8,6 +8,8 @@ import { startLive } from './live.js';
 
 const server = express();
 server.disable('x-powered-by');
+// Hinter dem Reverse-Proxy: echte Client-IP aus X-Forwarded-For (für das Rate-Limit)
+server.set('trust proxy', config.trustProxy.split(',').map((s) => s.trim()));
 
 server.use('/api/site', site);
 server.use('/api/v1', v1);
@@ -19,7 +21,7 @@ server.use((err, req, res, next) => {
   res.status(500).json({ error: 'Interner Fehler' });
 });
 
-server.listen(config.port, () => {
+server.listen(config.port, config.host, () => {
   console.log(`BGBB Wetter läuft auf http://localhost:${config.port}`);
   if (config.jobs) startJobs();
   startLive();

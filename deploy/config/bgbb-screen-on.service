@@ -1,0 +1,6 @@
+[Unit]
+Description=Bildschirm im Schaufenster einschalten
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/bgbb-screen on

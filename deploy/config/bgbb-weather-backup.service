@@ -1,0 +1,6 @@
+[Unit]
+Description=BGBB Wetter – Sicherung von weewx-Archiv und App-Datenbank
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/bgbb-backup

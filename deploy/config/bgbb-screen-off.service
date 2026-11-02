@@ -1,0 +1,6 @@
+[Unit]
+Description=Bildschirm im Schaufenster ausschalten
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/bgbb-screen off
