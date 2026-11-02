@@ -1,0 +1,20 @@
+{
+  "name": "bgbb-weather",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wetterstation BG Bregenz Blumenstraße – API, Homepage und Schaufenster-Anzeige",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node scripts/migrate-dump.js"
+  },
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "chart.js": "^4.6.1",
+    "express": "^5.3.0"
+  }
+}

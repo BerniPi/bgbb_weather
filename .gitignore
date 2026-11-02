@@ -1,0 +1,24 @@
+# Datenbank-Dumps und Backups (groß, nicht ins Repo)
+*.sql
+*.sql.gz
+*.sdb
+*.db
+*.db-wal
+*.db-shm
+*.sdb-wal
+*.sdb-shm
+data/
+
+# Zugangsdaten
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/

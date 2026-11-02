@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wetter BG Blumenstraße</title>
+  <link rel="stylesheet" href="schule.css">
+  <script src="/vendor/chart.js/chart.umd.js" defer></script>
+  <script src="schule.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <h1>Wetterstation BG Blumenstraße</h1>
+    <div id="storm" class="storm" hidden></div>
+    <div class="meta">
+      <span id="stale" class="stale" hidden></span>
+      <span>Messung <b id="dataTime">–</b></span>
+      <span id="clock" class="clock">–</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card now">
+      <div class="hero">
+        <span id="icon" class="icon"></span>
+        <div>
+          <div class="temp"><span id="outTemp">–</span><small>°C</small></div>
+          <div class="range">
+            <span class="up">▲ <b id="tMax">–</b> °C <i id="tMaxT"></i></span>
+            <span class="down">▼ <b id="tMin">–</b> °C <i id="tMinT"></i></span>
+          </div>
+        </div>
+      </div>
+      <table class="values">
+        <tbody id="values"></tbody>
+      </table>
+    </section>
+
+    <section class="side">
+      <div class="card info">
+        <h2>Bodensee</h2>
+        <dl id="lake"></dl>
+        <p class="hint">Änderung seit gestern in Klammer</p>
+      </div>
+      <div class="card info">
+        <h2>Sonne</h2>
+        <dl id="sun"></dl>
+      </div>
+      <div class="card info">
+        <h2>Mond</h2>
+        <dl id="moon"></dl>
+      </div>
+    </section>
+
+    <section class="charts">
+      <figure class="card"><figcaption>Temperatur &amp; Taupunkt <span>°C</span></figcaption><canvas id="cTemp"></canvas></figure>
+      <figure class="card"><figcaption>Niederschlag je Stunde <span>mm</span></figcaption><canvas id="cRain"></canvas></figure>
+      <figure class="card"><figcaption>Wind &amp; Böen <span>km/h</span></figcaption><canvas id="cWind"></canvas></figure>
+      <figure class="card"><figcaption>Windrichtung <span>°</span></figcaption><canvas id="cDir"></canvas></figure>
+      <figure class="card"><figcaption>Luftdruck <span>hPa</span></figcaption><canvas id="cBaro"></canvas></figure>
+      <figure class="card"><figcaption>Luftfeuchtigkeit <span>%</span></figcaption><canvas id="cHum"></canvas></figure>
+      <figure class="card"><figcaption>Sonnenstrahlung <span>W/m²</span></figcaption><canvas id="cRad"></canvas></figure>
+      <figure class="card"><figcaption>Bodensee – 4 Wochen <span>°C / cm</span></figcaption><canvas id="cLake"></canvas></figure>
+    </section>
+  </main>
+</body>
+</html>
