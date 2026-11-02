@@ -12,7 +12,10 @@ Archiv und liefert Seiten, API und Kiosk-Anzeige – ohne FTP, PHP oder MySQL.
 | `/verlauf` | Tag, Woche, Monat, Jahr – jeder Zeitraum seit Februar 2018 |
 | `/export` | Daten als CSV (auch für Excel) oder JSON herunterladen |
 | `/api` | Dokumentation der offenen API `/api/v1` |
-| `/schule` | Anzeige im Schaufenster |
+| `/klima` | Rekorde, Monats- und Jahreswerte, Monatsbericht |
+| `/bodensee` | Wasserstand und Wassertemperatur im Jahresvergleich |
+| `/station` | Station, Technik und aktueller Zustand |
+| `/schule` | Anzeige im Schaufenster, mit Livewerten |
 
 ## Schnellstart
 

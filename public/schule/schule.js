@@ -3,6 +3,7 @@ import { $, num, signed, hm, dt, compass, weatherIcon, dl, repeat, getJson, time
 import { setupCharts, renderSeries, renderLake, SERIES_IDS } from '/assets/charts.js';
 import { API } from '/assets/api.js';
 import { isStale, almanacItems, stormWarning } from '/assets/panels.js';
+import { subscribeLive, mergeLive } from '/assets/live.js';
 
 const CURRENT_EVERY = 60 * 1000;
 const CHARTS_EVERY = 5 * 60 * 1000;
@@ -17,6 +18,7 @@ function row(label, value, extra = '', cls = '') {
 
 function renderWeather(w) {
   const t = w.today ?? {};
+  $('liveBadge').hidden = !w.live;
   $('dataTime').textContent = dt(w.time);
   $('stale').hidden = !isStale(w.time);
   $('stale').textContent = 'Keine aktuellen Messdaten';
@@ -36,7 +38,7 @@ function renderWeather(w) {
     row('Luftdruck (Meereshöhe)', `${num(w.barometer)} hPa`),
     row('max / min', `${num(t.barometerMax?.value)} / ${num(t.barometerMin?.value)}`, '', 'sub'),
     w.pressure != null ? row('Luftdruck (gemessen)', `${num(w.pressure)} hPa`) : '',
-    row('Wind (10 min)', wind),
+    row(w.live ? 'Wind (aktuell)' : 'Wind (10 min)', wind),
     row('Böe (10 min)', `${num(w.windGust)} km/h`),
     row('stärkste Böe heute', `${num(t.windGustMax?.value)} km/h`, at(t.windGustMax), 'sub'),
     row('Niederschlagsrate', `${num(w.rainRate)} mm/h`),
@@ -74,9 +76,15 @@ function renderStorm(storm) {
   }
 }
 
+// Letzte Werte vom Server und letztes Live-Paket (null, solange nicht live)
+let weather = null;
+let packet = null;
+const showWeather = () => weather && renderWeather(mergeLive(weather, packet));
+
 async function loadCurrent() {
   const data = await getJson(API.current);
-  if (data.weather) renderWeather(data.weather);
+  weather = data.weather;
+  showWeather();
   renderLakeNow(data.lake);
   renderAlmanac(data.almanac);
   renderStorm(data.storm);
@@ -94,4 +102,5 @@ tick();
 setInterval(tick, 1000);
 repeat(loadCurrent, CURRENT_EVERY);
 repeat(loadCharts, CHARTS_EVERY);
+subscribeLive((p) => { packet = p; showWeather(); }, (live) => { if (!live) { packet = null; showWeather(); } });
 setTimeout(() => location.reload(), RELOAD_EVERY);

@@ -39,6 +39,7 @@ body {
 }
 .top h1 { margin: 0; font-size: 1.6rem; font-weight: 600; flex: 1; }
 .meta { display: flex; gap: 1.5rem; align-items: baseline; font-size: 1.1rem; }
+.top .live-badge { color: #8ce99a; }
 .clock { font-size: 1.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stale { background: var(--danger); padding: 0.1rem 0.6rem; border-radius: 4px; font-weight: 600; }
 .storm { padding: 0.25rem 0.9rem; border-radius: 4px; font-weight: 700; font-size: 1.2rem; color: #000; }

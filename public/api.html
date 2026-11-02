@@ -25,6 +25,7 @@
         <tr><td><code>GET /api/v1/data</code></td><td>Messreihen: 5-Minuten-Werte oder Stunden-, Tages-, Monats-, Jahreswerte</td></tr>
         <tr><td><code>GET /api/v1/lake</code></td><td>Bodensee (Pegel Bregenz): Tageswerte Wassertemperatur und Wasserstand</td></tr>
         <tr><td><code>GET /api/v1/almanac</code></td><td>Sonnen- und Mondzeiten für ein Datum</td></tr>
+        <tr><td><code>GET /api/v1/live</code></td><td>Livewerte als Server-Sent Events, etwa alle 2,5 Sekunden ein Paket</td></tr>
         <tr><td><code>GET /api/v1/fields</code></td><td>Verfügbare Messgrößen, Einheiten, Zeitraum der Daten und Grenzen</td></tr>
       </table>
       <p class="hint" id="limits"></p>
@@ -64,6 +65,11 @@
         jeweils mit <code>value</code> und <code>time</code>.</p>
       <h3><code>/api/v1/lake?from=&amp;to=</code></h3>
       <p>Tageswerte des Bodensees (Quelle: Land Vorarlberg, VoWIS), Standard die letzten 28 Tage. Unterstützt <code>format</code>, <code>csv=de</code>, <code>download</code>.</p>
+      <h3><code>/api/v1/live</code></h3>
+      <p>Datenstrom (<code>text/event-stream</code>) mit jedem Messpaket der Station. Jedes Ereignis ist ein JSON-Objekt mit
+        <code>time</code> (Unix-Zeit) und den aktuellen Werten (<code>outTemp</code>, <code>windSpeed</code>, <code>windDir</code> …).
+        Im Browser: <code>new EventSource('/api/v1/live').onmessage = (e) =&gt; console.log(JSON.parse(e.data))</code>.
+        Antwortet mit 404, wenn gerade keine Livewerte verfügbar sind.</p>
       <h3><code>/api/v1/almanac?date=</code></h3>
       <p>Sonnenauf- und -untergang, Höchststand, nächste Tagundnachtgleiche und Sonnenwende, Mondzeiten und Mondphase.</p>
     </section>

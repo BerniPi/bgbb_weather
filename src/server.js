@@ -4,6 +4,7 @@ import { config, ROOT } from './config.js';
 import { site } from './routes/site.js';
 import { v1 } from './routes/v1.js';
 import { startJobs } from './jobs.js';
+import { startLive } from './live.js';
 
 const server = express();
 server.disable('x-powered-by');
@@ -21,4 +22,5 @@ server.use((err, req, res, next) => {
 server.listen(config.port, () => {
   console.log(`BGBB Wetter läuft auf http://localhost:${config.port}`);
   if (config.jobs) startJobs();
+  startLive();
 });

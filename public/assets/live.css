@@ -1,0 +1,12 @@
+/* „live“-Kennzeichen für Startseite und Schaufenster */
+.live-badge {
+  display: inline-flex; align-items: center; gap: 0.35em;
+  font-size: 0.8em; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #2f9e44;
+}
+.live-badge::before {
+  content: ""; width: 0.6em; height: 0.6em; border-radius: 50%; background: currentColor;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+.live-badge[hidden] { display: none; }
+@keyframes live-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .live-badge::before { animation: none; } }

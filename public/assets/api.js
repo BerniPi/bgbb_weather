@@ -11,6 +11,7 @@ export const API = {
 
   // öffentliche API
   current: '/api/v1/current',
+  live: '/api/v1/live',
   fields: '/api/v1/fields',
   /** /api/v1/data bzw. /api/v1/lake mit Parametern; leere Werte werden weggelassen */
   data: (params) => withQuery('/api/v1/data', params),

@@ -4,6 +4,7 @@ import { setupCharts, renderSeries, renderLake, SERIES_IDS } from './charts.js';
 import { API } from './api.js';
 import { isStale, almanacItems, stormWarning } from './panels.js';
 import { renderLayout } from './layout.js';
+import { subscribeLive, mergeLive } from './live.js';
 import { row, statRows } from './stats.js';
 
 const at = (e) => (e ? hm(e.time) : '');
@@ -12,6 +13,7 @@ const dir = (deg) => (deg == null ? '' : ` <span class="t">${compass(deg)}</span
 
 function renderWeather(w) {
   const t = w.today ?? {};
+  $('liveBadge').hidden = !w.live;
   $('dataTime').textContent = dt(w.time);
   $('stale').hidden = !isStale(w.time);
   $('stale').textContent = `Keine aktuellen Messdaten – letzte Messung ${dt(w.time)}`;
@@ -40,7 +42,7 @@ function renderWeather(w) {
     w.pressure != null ? row('Luftdruck gemessen (434 m)', `${num(w.pressure)} hPa`) : '',
     row('Luftdruck reduziert (Meereshöhe)', `${num(w.barometer)} hPa`),
     row('Luftdrucktrend (3 h)', `${signed(trend)} hPa${arrow}`),
-    row('Wind (Mittel 10 min)', `${num(w.windSpeed)} km/h${w.windSpeed > 0.5 ? dir(w.windDir) : ''}`),
+    row(w.live ? 'Wind (aktuell)' : 'Wind (Mittel 10 min)', `${num(w.windSpeed)} km/h${w.windSpeed > 0.5 ? dir(w.windDir) : ''}`),
     row('Böe (10 min)', `${num(w.windGust)} km/h`),
     row('Niederschlagsrate', `${num(w.rainRate)} mm/h`),
     row('Niederschlag 1 h / 24 h', `${num(w.rain1h)} / ${num(w.rain24h)} mm`),
@@ -84,9 +86,15 @@ function renderStorm(storm) {
   }
 }
 
+// Letzte Werte vom Server und letztes Live-Paket (null, solange nicht live)
+let weather = null;
+let packet = null;
+const showWeather = () => weather && renderWeather(mergeLive(weather, packet));
+
 async function loadCurrent() {
   const data = await getJson(API.current);
-  if (data.weather) renderWeather(data.weather);
+  weather = data.weather;
+  showWeather();
   renderLakeNow(data.lake);
   renderAlmanac(data.almanac);
   renderStorm(data.storm);
@@ -102,3 +110,4 @@ renderLayout();
 setupCharts(12);
 repeat(loadCurrent, 60 * 1000);
 repeat(loadCharts, 5 * 60 * 1000);
+subscribeLive((p) => { packet = p; showWeather(); }, (live) => { if (!live) { packet = null; showWeather(); } });

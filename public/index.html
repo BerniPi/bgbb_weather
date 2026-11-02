@@ -7,6 +7,7 @@
   <meta name="description" content="Aktuelle Wetterdaten der Wetterstation am BG Bregenz Blumenstraße: Temperatur, Wind, Niederschlag, Luftdruck, Bodensee und Astronomie.">
   <link rel="stylesheet" href="/assets/site.css">
   <link rel="stylesheet" href="/assets/aktuell.css">
+  <link rel="stylesheet" href="/assets/live.css">
   <script src="/vendor/chart.js/chart.umd.js" defer></script>
   <script src="/assets/aktuell.js" type="module"></script>
 </head>
@@ -19,7 +20,7 @@
 
     <section class="grid cols-3 top">
       <div class="card hero">
-        <h2>Aktuell <small id="dataTime">–</small></h2>
+        <h2>Aktuell <span class="live-badge" id="liveBadge" hidden>live</span> <small id="dataTime">–</small></h2>
         <div class="hero-main">
           <span id="icon" class="icon"></span>
           <div>

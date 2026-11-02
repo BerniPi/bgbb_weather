@@ -41,7 +41,8 @@ FTP → `import.php` → MySQL → PHP-Seiten. Ordner daneben: `../wetter`, `../
 
 Kein Test-Framework, keine Typprüfung, kein Build. Prüfen = Server starten, Seiten und `/api/v1/*` aufrufen.
 
-Konfiguration über `.env` (Vorlage `.env.example`): `PORT`, `WEEWX_DB`, `APP_DB`, `JOBS` (0 = keine Abrufe).
+Konfiguration über `.env` (Vorlage `.env.example`): `PORT`, `WEEWX_DB`, `APP_DB`, `JOBS` (0 = keine Abrufe),
+`MQTT_URL`/`MQTT_TOPIC` (Livewerte), `LIVE_SIM=1` (simulierte Livewerte für die Entwicklung).
 Lokal: `data/weewx.sdb` = Kopie vom Pi (`/var/lib/weewx/weewx.sdb`), `data/app.db` aus der Migration.
 `data/`, `*.sdb`, `*.db`, `*.sql`, `.env` sind nicht im Repo.
 
@@ -69,6 +70,7 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `lake.js` | Bodensee: `saveLake`, `lakeNow`, `lakeDays`, `lakeChart`, `lakeStats`, `lakeYear`, `floodLevels` |
 | `storm.js` | Sturmwarnung: `parseStormPage`, `saveStorm`, `storm` |
 | `station.js` | `stationStatus()`: letzte Messung, Empfang/Batterie 24 h, letzte Abrufe, Korrekturen |
+| `live.js` | Livewerte: MQTT (weewx-mqtt) oder Simulator → `normalize` → SSE an alle Browser (`liveStream`) |
 | `jobs.js` | Abrufe alle 15 min (Bodensee) / 5 min (Sturm); nur holen, speichern in lake.js/storm.js |
 | `http.js` | `parseDate`, `parseRange`, `clampInt`, `BadRequest` + Handler (400) |
 | `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/lake-year`, `/climate`, `/month-report`, `/station` – für die eigenen Seiten |
@@ -85,6 +87,7 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `lake?from&to` | Bodensee-Tageswerte |
 | `almanac?date` | Sonne und Mond |
 | `fields` | Messgrößen, Kennwerte, Datenzeitraum (`span`), Grenzen (`limits`) |
+| `live` | Server-Sent Events, ein Paket je Loop (~2,5 s); 404 ohne Livequelle |
 
 Grenzen: raw/hour max. 400 Tage pro Abfrage; `/data` und `/lake` max. 120 Abfragen/min je IP; CORS `*`.
 Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain_sum`).
@@ -106,6 +109,7 @@ Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain
 | `assets/layout.js` | Kopf/Navigation/Fuß; neue Seite hier eintragen (`soon: true` = ausgegraut) |
 | `assets/charts.js` | alle Diagramme: `renderSeries`, `renderDaily`, `renderLake`, `renderLakeYear` (+ Hochwasserlinien), `SERIES_IDS` |
 | `assets/stats.js` | Statistik-Tabelle (`statRows`) |
+| `assets/live.js` + `live.css` | `subscribeLive`, `mergeLive` (ersetzt aktuelle Werte, nicht Böe/Tageswerte), „live“-Kennzeichen |
 | `assets/panels.js` | Sonne/Mond (`almanacItems`), Sturmwarnung, `isStale` – Startseite und Kiosk |
 | `assets/site.css` | Design-Tokens, Hell/Dunkel, Karten, Tabellen, Steuerelemente (`.btn`, `.seg`, `.input`, `.table-wrap`) |
 
@@ -169,11 +173,30 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 4. Kiosk: Chromium `--kiosk http://localhost:8080/schule`; Bildschirm Mo–Fr 07:45–16:45 außer Juli/August
    per `xset dpms` / `wlr-randr` / HDMI-CEC (`cec-client`) statt `tvservice`.
 
+## Livewerte
+
+weewx → Erweiterung **weewx-mqtt** → Mosquitto (nur lokal) → `live.js` → `/api/v1/live` (SSE) → Startseite und Kiosk.
+Einstellung in `weewx.conf` (an der echten Station noch zu prüfen):
+
+```
+[StdRESTful]
+    [[MQTT]]
+        server_url = mqtt://localhost:1883/
+        topic = weather
+        unit_system = METRIC
+        append_units_label = false
+        binding = loop
+```
+
+weewx-mqtt sendet dann auf `weather/loop`. `normalize` liest Zahlen auch als Text, schneidet Einheiten-Anhänge ab
+(`outTemp_C`) und nimmt ohne `usUnits` METRIC (16) an. Fehlende Größen eines Pakets werden vom vorigen übernommen.
+Die Seite fällt nach 30 s ohne Paket auf die minütlichen Werte zurück.
+
 ## Offen
 
-| Thema | Vorbild alte Seite |
-|-------|--------------------|
-| Livewerte | weewx-mqtt → Mosquitto → Node → Server-Sent Events; Loop-Pakete alle 2,5 s |
+| Thema | Hinweis |
+|-------|---------|
+| Umzug auf Debian | siehe „Betrieb und Umzug“; Livewerte mit echter Station prüfen |
 
 ## Arbeitsweise
 

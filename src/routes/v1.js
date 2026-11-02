@@ -6,6 +6,7 @@ import { current, archiveSpan } from '../weather.js';
 import { lakeNow, lakeDays } from '../lake.js';
 import { storm } from '../storm.js';
 import { almanac } from '../astro.js';
+import { liveStream, liveEnabled } from '../live.js';
 import { addDays, localDate, localToUnix } from '../time.js';
 import { BadRequest, parseDate, parseRange, today, clampInt, badRequestHandler } from '../http.js';
 
@@ -119,6 +120,12 @@ v1.get('/lake', rateLimit, (req, res) => {
     rows: lakeDays(range.from, range.to),
     filename: `bodensee_${range.from}_${range.to}`,
   });
+});
+
+// Livewerte als Server-Sent Events; ohne Quelle 404, damit Browser nicht endlos neu verbinden
+v1.get('/live', (req, res) => {
+  if (!liveEnabled()) return res.status(404).json({ error: 'Livewerte nicht verfügbar' });
+  return liveStream(req, res);
 });
 
 v1.get('/almanac', (req, res) => {
