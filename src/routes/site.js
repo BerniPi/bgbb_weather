@@ -3,7 +3,7 @@
 import express from 'express';
 import { series } from '../weather.js';
 import { periodData } from '../period.js';
-import { lakeChart } from '../lake.js';
+import { lakeChart, lakeYear } from '../lake.js';
 import { climate, monthReport } from '../climate.js';
 import { addDays } from '../time.js';
 import { parseDate, today, clampInt, badRequestHandler } from '../http.js';
@@ -37,6 +37,10 @@ site.get('/month-report', (req, res) => {
 site.get('/lake', (req, res) => {
   const days = clampInt(req.query.days, 28, 1, 366);
   res.json(lakeChart(addDays(today(), 1 - days), today()));
+});
+
+site.get('/lake-year', (req, res) => {
+  res.json(lakeYear(clampInt(req.query.year, Number(today().slice(0, 4)), 1900, 2100)));
 });
 
 site.use(badRequestHandler);

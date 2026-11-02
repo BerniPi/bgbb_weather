@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bodensee – Wetter BG Blumenstraße Bregenz</title>
+  <meta name="description" content="Wasserstand und Wassertemperatur des Bodensees am Pegel Bregenz: aktuelle Werte, Jahresvergleich, historischer Bereich und Hochwasser-Kennwerte.">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/bodensee.css">
+  <script src="/vendor/chart.js/chart.umd.js" defer></script>
+  <script src="/assets/bodensee.js" type="module"></script>
+</head>
+<body>
+  <header class="site"></header>
+
+  <main>
+    <h1 class="page-title">Bodensee</h1>
+    <p class="lead">Pegel Bregenz (Pegelnullpunkt 392,14 m ü. A.). Messwerte des Landes Vorarlberg,
+      in der App gesammelt seit Dezember 2017; historische Werte 1864–2024.</p>
+
+    <section class="grid cols-3">
+      <div class="card">
+        <h2>Aktuell <small id="nowTime"></small></h2>
+        <table class="values"><tbody id="now"></tbody></table>
+        <p class="hint">Änderung seit gestern in Klammer</p>
+      </div>
+      <div class="card">
+        <h2>Im Jahr <span id="yearLabel"></span></h2>
+        <table class="values"><tbody id="yearStats"></tbody></table>
+      </div>
+      <div class="card">
+        <h2>Extremwerte</h2>
+        <table class="values"><tbody id="extremes"></tbody></table>
+        <p class="flood" id="flood"></p>
+        <p class="hint">HW2 wird statistisch alle 2 Jahre erreicht, HW100 alle 100 Jahre.</p>
+      </div>
+    </section>
+
+    <section class="card year-bar">
+      <span>Jahr</span>
+      <div class="seg" id="years"></div>
+    </section>
+
+    <section class="grid charts">
+      <figure class="card chart"><h3>Wasserstand <span>cm</span></h3><div class="canvas tall"><canvas id="cStand"></canvas></div>
+        <div class="legend" id="standLegend"></div></figure>
+      <figure class="card chart"><h3>Wassertemperatur in 0,5 m Tiefe <span>°C</span></h3><div class="canvas"><canvas id="cTemp"></canvas></div>
+        <div class="legend" id="tempLegend"></div></figure>
+    </section>
+  </main>
+
+  <footer class="site"></footer>
+</body>
+</html>

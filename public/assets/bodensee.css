@@ -1,0 +1,7 @@
+/* Bodensee-Seite */
+.year-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: var(--gap) 0; padding: 12px 16px; }
+.year-bar > span { color: var(--muted); font-weight: 600; }
+.flood { margin: 12px 0 0; font-size: 0.9rem; line-height: 1.6; }
+.charts { grid-template-columns: minmax(0, 1fr); }
+.charts figure { margin: 0; }
+.chart .canvas.tall { height: 340px; }

@@ -89,6 +89,7 @@ export function monthAxis(min, max) {
   };
 }
 
+const band = (color) => `${color}33`;
 const yAxis = (extra = {}) => ({ grid: { color: gridColor() }, ...extra });
 const xy = (records, key) => records.map((r) => ({ x: r.t * 1000, y: r[key] }));
 const line = (data, color, extra = {}) => ({
@@ -192,11 +193,17 @@ const floodLabels = {
     for (const ds of c.data.datasets) {
       if (!ds.flood) continue;
       ctx.fillStyle = ds.borderColor;
-      ctx.fillText(ds.label, chartArea.right - 4, c.scales.y1.getPixelForValue(ds.data[0].y) - 2);
+      ctx.fillText(ds.label, chartArea.right - 4, c.scales[ds.yAxisID ?? 'y'].getPixelForValue(ds.data[0].y) - 2);
     }
     ctx.restore();
   },
 };
+
+/** Waagrechte Hochwasserlinien über die ganze x-Achse */
+function floodDatasets(lines, x, yAxisID) {
+  return lines.map((l) => line([{ x: x.min, y: l.value }, { x: x.max, y: l.value }], l.color,
+    { label: l.name, flood: true, yAxisID, borderWidth: 1.5, borderDash: [2, 3] }));
+}
 
 /** Bodensee aus /api/site/lake: Wassertemperatur, Pegel, langjähriges Mittel, Hochwasserlinien */
 export function renderLake(id, { days, flood }, { tooltips = true } = {}) {
@@ -210,8 +217,7 @@ export function renderLake(id, { days, flood }, { tooltips = true } = {}) {
     line(days.map((d) => ({ x: t(d), y: d.temp05 })), COLORS.lake, { ...daily, label: 'Wassertemperatur', yAxisID: 'y' }),
     line(days.map((d) => ({ x: t(d), y: d.stand })), COLORS.stand, { ...daily, label: 'Pegel', yAxisID: 'y1', borderDash: [6, 3] }),
     line(days.map((d) => ({ x: t(d), y: d.stand_mit })), COLORS.standMean, { ...daily, label: 'Pegel langj. Mittel', yAxisID: 'y1', borderWidth: 1 }),
-    ...lines.map((l) => line([{ x: x.min, y: l.value }, { x: x.max, y: l.value }], l.color,
-      { label: l.name, flood: true, yAxisID: 'y1', borderWidth: 1.5, borderDash: [2, 3] })),
+    ...floodDatasets(lines, x, 'y1'),
   ] }, plugins: [floodLabels], options: {
     scales: {
       x,
@@ -228,11 +234,47 @@ export function renderLake(id, { days, flood }, { tooltips = true } = {}) {
   } });
 }
 
+/**
+ * Bodensee-Jahresvergleich aus /api/site/lake-year.
+ * Pegel: gewähltes Jahr, Vorjahr, historischer Bereich (Min–Max) und Mittel 1864–2024, Hochwasserlinien.
+ * Wassertemperatur: gewähltes Jahr und Vorjahr.
+ */
+export function renderLakeYear(ids, { year, days, previous, hist, flood }) {
+  // Alle Reihen auf die Tage des gewählten Jahres legen (29.2. fehlt im Vorjahr/Mittel ggf.)
+  const at = (mmdd) => Date.parse(`${year}-${mmdd}T12:00:00Z`);
+  const x = monthAxis(Date.UTC(year, 0, 1, 12), Date.UTC(year, 11, 31, 12));
+  const pts = (rows, key, dayKey = 'date') => rows
+    .map((r) => ({ x: at(dayKey === 'date' ? r.date.slice(5) : r.day), y: r[key] }))
+    .filter((p) => !Number.isNaN(p.x));
+  const daily = { spanGaps: 2 * 86400 * 1000 };
+  const lines = floodLines(flood, Math.max(...days.map((d) => d.stand ?? 0), ...previous.map((d) => d.stand ?? 0)));
+  const tip = (unit, digits) => ({
+    filter: (item) => !item.dataset.flood && !item.dataset.band,
+    callbacks: {
+      title: (items) => dayFmt.format(items[0].parsed.x),
+      label: (item) => `${item.dataset.label}: ${num(item.parsed.y, digits)} ${unit}`,
+    },
+  });
+
+  draw(ids.stand, { type: 'line', data: { datasets: [
+    line(pts(days, 'stand'), COLORS.stand, { ...daily, label: String(year), borderWidth: 2.5 }),
+    line(pts(previous, 'stand'), COLORS.lake, { ...daily, label: String(year - 1), borderWidth: 1.2, borderDash: [5, 3] }),
+    line(pts(hist, 'mean', 'day'), COLORS.standMean, { ...daily, label: 'Mittel 1864–2024', borderWidth: 1.2 }),
+    line(pts(hist, 'max', 'day'), band(COLORS.standMean), { ...daily, label: 'hist. Max', band: true, borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: band(COLORS.standMean) }),
+    line(pts(hist, 'min', 'day'), band(COLORS.standMean), { ...daily, label: 'hist. Min', band: true, borderWidth: 0, pointRadius: 0 }),
+    ...floodDatasets(lines, x, 'y'),
+  ] }, plugins: [floodLabels], options: { scales: { x, y: yAxis() }, plugins: { tooltip: tip('cm', 0) } } });
+
+  draw(ids.temp, { type: 'line', data: { datasets: [
+    line(pts(days, 'temp05'), COLORS.temp, { ...daily, label: String(year), borderWidth: 2.5 }),
+    line(pts(previous, 'temp05'), COLORS.dew, { ...daily, label: String(year - 1), borderWidth: 1.2, borderDash: [5, 3] }),
+  ] }, options: { scales: { x, y: yAxis() }, plugins: { tooltip: tip('°C', 1) } } });
+}
+
 // --- Tageswerte (Monat, Jahr) ---------------------------------------------------
 
 const dayX = (d) => (d.unix + 43200) * 1000;
 const dxy = (days, key) => days.map((d) => ({ x: dayX(d), y: d[key] }));
-const band = (color) => `${color}33`;
 
 function dailyTooltip(unit, digits = 1) {
   return {

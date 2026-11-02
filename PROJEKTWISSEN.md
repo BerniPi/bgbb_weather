@@ -66,11 +66,11 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `aggregate.js` | `archiveRows()` (roh), `aggregateRows()` (hour/day/month/year), `columns()` – für API, Export **und** Verlauf |
 | `period.js` | `periodData()` für die Verlaufsseite |
 | `climate.js` | `climate()` Rekorde + Monats-/Jahrestabellen (10 min Cache), `monthReport()` |
-| `lake.js` | Bodensee: `saveLake`, `lakeNow`, `lakeDays`, `lakeChart`, `lakeStats` |
+| `lake.js` | Bodensee: `saveLake`, `lakeNow`, `lakeDays`, `lakeChart`, `lakeStats`, `lakeYear`, `floodLevels` |
 | `storm.js` | Sturmwarnung: `parseStormPage`, `saveStorm`, `storm` |
 | `jobs.js` | Abrufe alle 15 min (Bodensee) / 5 min (Sturm); nur holen, speichern in lake.js/storm.js |
 | `http.js` | `parseDate`, `parseRange`, `clampInt`, `BadRequest` + Handler (400) |
-| `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/climate`, `/month-report` – für die eigenen Seiten |
+| `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/lake-year`, `/climate`, `/month-report` – für die eigenen Seiten |
 | `routes/v1.js` | öffentliche API, CSV/JSON-Ausgabe, Rate-Limit |
 
 **Regel:** Jedes Fachmodul besitzt seine Tabellen (Lesen und Schreiben). Neue Abfragen dorthin, nicht in Routen.
@@ -94,6 +94,7 @@ Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain
 |-------|--------|
 | `index.html` + `assets/aktuell.*` | Startseite |
 | `verlauf.html` + `assets/verlauf.*` | Verlauf, URL `?zeitraum=tag|woche|monat|jahr&datum=JJJJ-MM-TT` |
+| `bodensee.html` + `assets/bodensee.*` | Bodensee: aktuell, Jahresvergleich (`?jahr=`), historischer Bereich, Hochwasser |
 | `klima.html` + `assets/klima.*` | Rekorde, Monats-/Jahrestabelle mit Kenntagen, Monatsbericht |
 | `export.html` + `assets/export.*` | Export |
 | `api.html` + `assets/apidoc.*` | API-Doku (Feldtabelle live aus `/api/v1/fields`) |
@@ -101,7 +102,7 @@ Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain
 | `assets/format.js` | Zahlen (de-AT, ohne Tausendertrennung), Datum/Zeit in Wien, Symbole, `$`, `dl`, `repeat`, `getJson`, `todayIso`, `addDaysIso` |
 | `assets/api.js` | **alle** API-Adressen |
 | `assets/layout.js` | Kopf/Navigation/Fuß; neue Seite hier eintragen (`soon: true` = ausgegraut) |
-| `assets/charts.js` | alle Diagramme: `renderSeries`, `renderDaily`, `renderLake` (+ Hochwasserlinien), `SERIES_IDS` |
+| `assets/charts.js` | alle Diagramme: `renderSeries`, `renderDaily`, `renderLake`, `renderLakeYear` (+ Hochwasserlinien), `SERIES_IDS` |
 | `assets/stats.js` | Statistik-Tabelle (`statRows`) |
 | `assets/panels.js` | Sonne/Mond (`almanacItems`), Sturmwarnung, `isStale` – Startseite und Kiosk |
 | `assets/site.css` | Design-Tokens, Hell/Dunkel, Karten, Tabellen, Steuerelemente (`.btn`, `.seg`, `.input`, `.table-wrap`) |
@@ -145,6 +146,7 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 - **Sonnenscheindauer** ist eine Schätzung aus der Strahlung (Schwelle abhängig von Tag und Uhrzeit).
 - **Bodensee-Pegel** in cm am Pegel Bregenz (Nullpunkt 392,14 m ü. A.). Hochwasserlinien (HW2–HW100) erscheinen,
   sobald der Pegel bis 50 cm herankommt, plus nächste Stufe (`charts.js` `floodLines`).
+- **VoWIS-Zeitpunkte** (z. B. `nnw`/`hhw` im Status `see`) sind UTC; Kalendertage (`see_days.date`) sind Ortsdatum.
 - **Sturmwarnung:** Seite kttg.ch, drei Regionen; gezählt wird Region Ost (Bregenz). 40 = Starkwind, 90 = Sturm.
 - **Messfehler** stehen in `corrections.js` (z. B. Böe 174 km/h am 16.05.2022 07:55). Neue Fehler dort eintragen;
   5-min-Werte werden null, Min/Max des Tages zählen nicht. Alle Datensätze daher über `cleanRow` lesen, nie `toDisplay` direkt.
@@ -168,7 +170,6 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 
 | Thema | Vorbild alte Seite |
 |-------|--------------------|
-| `/bodensee` | eigene Seite mit Jahresvergleich und Hochwasser |
 | `/station` | Hardware, Standort, Geschichte |
 | Livewerte | weewx-mqtt → Mosquitto → Node → Server-Sent Events; Loop-Pakete alle 2,5 s |
 

@@ -59,9 +59,38 @@ export function lakeDays(from, to) {
   return qDays.all(from, to).map((r) => ({ ...r, stand_mit: r.stand_mit == null ? null : Math.round(r.stand_mit) }));
 }
 
+/** Hochwasser-Kennwerte des Pegels (cm) */
+export function floodLevels() {
+  return getStatus('see')?.flood ?? FLOOD_DEFAULT;
+}
+
 /** Tageswerte plus Hochwasser-Kennwerte für das Diagramm */
 export function lakeChart(from, to) {
-  return { days: lakeDays(from, to), flood: getStatus('see')?.flood ?? FLOOD_DEFAULT };
+  return { days: lakeDays(from, to), flood: floodLevels() };
+}
+
+const qHistAll = app.prepare('SELECT day, stand_min AS min, stand_mit AS mean, stand_max AS max FROM see_hist ORDER BY day');
+const qYears = app.prepare("SELECT DISTINCT substr(date, 1, 4) AS y FROM see_days ORDER BY y");
+
+/**
+ * Daten der Bodensee-Seite für ein Jahr: Tageswerte des Jahres und des Vorjahres,
+ * historischer Pegelbereich je Kalendertag, Kennwerte, Extremwerte im Jahr und insgesamt
+ */
+export function lakeYear(year) {
+  const y = String(year);
+  const days = lakeDays(`${y}-01-01`, `${y}-12-31`);
+  const status = getStatus('see');
+  return {
+    year: Number(y),
+    years: qYears.all().map((r) => Number(r.y)),
+    days,
+    previous: lakeDays(`${+y - 1}-01-01`, `${+y - 1}-12-31`),
+    hist: qHistAll.all().map((r) => ({ ...r, mean: r.mean == null ? null : Math.round(r.mean) })),
+    flood: floodLevels(),
+    extremes: { lowest: status?.nnw ?? null, highest: status?.hhw ?? null },
+    stats: lakeStats(days),
+    allTime: lakeStats(lakeDays('1900-01-01', '2100-12-31')),
+  };
 }
 
 /** Minimum und Maximum von Wassertemperatur und Pegel mit Datum */
