@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API – Wetter BG Blumenstraße Bregenz</title>
+  <meta name="description" content="Offene Schnittstelle der Wetterstation BG Blumenstraße: aktuelle Werte, Messreihen seit 2018, Bodensee und Astronomie als JSON oder CSV.">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/apidoc.css">
+  <script src="/assets/apidoc.js" type="module"></script>
+</head>
+<body>
+  <header class="site"></header>
+
+  <main class="doc">
+    <h1 class="page-title">API</h1>
+    <p class="lead">Alle Messwerte der Wetterstation stehen frei zur Verfügung – für Unterricht, eigene Auswertungen oder Projekte.
+      Keine Anmeldung nötig. Antworten als JSON oder CSV, Zeiten in Wiener Ortszeit (ISO 8601 mit Versatz) und als Unix-Zeit.
+      Für einfache Downloads gibt es die <a href="/export">Exportseite</a>.</p>
+
+    <section class="card">
+      <h2>Überblick</h2>
+      <table class="endpoints">
+        <tr><td><code>GET /api/v1/current</code></td><td>Aktuelle Werte, Extremwerte von heute und vor einem Jahr, Bodensee, Sturmwarnung, Sonne und Mond</td></tr>
+        <tr><td><code>GET /api/v1/data</code></td><td>Messreihen: 5-Minuten-Werte oder Stunden-, Tages-, Monats-, Jahreswerte</td></tr>
+        <tr><td><code>GET /api/v1/lake</code></td><td>Bodensee (Pegel Bregenz): Tageswerte Wassertemperatur und Wasserstand</td></tr>
+        <tr><td><code>GET /api/v1/almanac</code></td><td>Sonnen- und Mondzeiten für ein Datum</td></tr>
+        <tr><td><code>GET /api/v1/fields</code></td><td>Verfügbare Messgrößen, Einheiten, Zeitraum der Daten und Grenzen</td></tr>
+      </table>
+      <p class="hint" id="limits"></p>
+    </section>
+
+    <section class="card">
+      <h2><code>/api/v1/data</code> – Messreihen</h2>
+      <div class="table-wrap"><table class="params">
+        <thead><tr><th>Parameter</th><th>Bedeutung</th><th>Standard</th></tr></thead>
+        <tbody>
+          <tr><td><code>from</code>, <code>to</code></td><td>Zeitraum als <code>JJJJ-MM-TT</code>, beide Tage einschließlich</td><td>heute</td></tr>
+          <tr><td><code>interval</code></td><td><code>raw</code> (5 Minuten), <code>hour</code>, <code>day</code>, <code>month</code>, <code>year</code></td><td><code>raw</code></td></tr>
+          <tr><td><code>fields</code></td><td>Kommagetrennte Messgrößen, siehe Tabelle unten</td><td>alle</td></tr>
+          <tr><td><code>format</code></td><td><code>json</code> oder <code>csv</code></td><td><code>json</code></td></tr>
+          <tr><td><code>csv=de</code></td><td>CSV für deutsches Excel: Strichpunkt, Dezimalkomma, Spaltennamen auf Deutsch</td><td></td></tr>
+          <tr><td><code>download=1</code></td><td>Als Datei herunterladen</td><td></td></tr>
+          <tr><td><code>preview=n</code></td><td>Nur die ersten <i>n</i> Zeilen (Gesamtzahl steht in <code>meta.total</code>)</td><td></td></tr>
+        </tbody>
+      </table></div>
+      <p>Bei <code>raw</code> heißen die Spalten wie die Messgröße (<code>outTemp</code>), sonst Messgröße und Kennwert
+        (<code>outTemp_avg</code>, <code>outTemp_min</code>, <code>outTemp_max</code>, <code>rain_sum</code> …).
+        Tages-, Monats- und Jahreswerte stammen aus den Tageszusammenfassungen von weewx; Minimum und Maximum beruhen dabei auf den Einzelmessungen alle 2–3 Sekunden.</p>
+
+      <h3>Beispiele</h3>
+      <ul class="examples" id="examples"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Messgrößen</h2>
+      <div class="table-wrap"><table class="params" id="fields"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>Weitere Endpunkte</h2>
+      <h3><code>/api/v1/current</code></h3>
+      <p>Ohne Parameter. Wird minütlich aktualisiert; Werte in <code>weather</code>, Extremwerte in <code>weather.today</code> und <code>weather.lastYear</code>
+        jeweils mit <code>value</code> und <code>time</code>.</p>
+      <h3><code>/api/v1/lake?from=&amp;to=</code></h3>
+      <p>Tageswerte des Bodensees (Quelle: Land Vorarlberg, VoWIS), Standard die letzten 28 Tage. Unterstützt <code>format</code>, <code>csv=de</code>, <code>download</code>.</p>
+      <h3><code>/api/v1/almanac?date=</code></h3>
+      <p>Sonnenauf- und -untergang, Höchststand, nächste Tagundnachtgleiche und Sonnenwende, Mondzeiten und Mondphase.</p>
+    </section>
+
+    <section class="card">
+      <h2>Nutzung</h2>
+      <p>Die Daten stammen von der Schulwetterstation (Davis Vantage Pro2) auf dem Dach des BG Bregenz Blumenstraße
+        und werden ohne Gewähr bereitgestellt. Bitte bei Veröffentlichungen die Quelle „Wetterstation BG Blumenstraße Bregenz“ angeben.
+        Bei zu vielen Abfragen antwortet der Server mit Status 429.</p>
+    </section>
+  </main>
+
+  <footer class="site"></footer>
+</body>
+</html>

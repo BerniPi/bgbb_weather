@@ -1,6 +1,7 @@
 // Verlaufsseite: Tag / Woche / Monat / Jahr für jeden Zeitraum seit Beginn der Aufzeichnung
-import { $, num, longDate, getJson } from './format.js';
-import { setupCharts, renderSeries, renderDaily, renderLake } from './charts.js';
+import { $, num, longDate, getJson, todayIso } from './format.js';
+import { setupCharts, renderSeries, renderDaily, renderLake, SERIES_IDS } from './charts.js';
+import { API } from './api.js';
 import { renderLayout } from './layout.js';
 import { row, statRows } from './stats.js';
 
@@ -11,7 +12,6 @@ const PARAM_RANGE = Object.fromEntries(Object.entries(RANGE_PARAM).map(([k, v]) 
 const monthYearFmt = new Intl.DateTimeFormat('de-AT', { timeZone: 'UTC', month: 'long', year: 'numeric' });
 const dayMonthFmt = new Intl.DateTimeFormat('de-AT', { timeZone: 'UTC', day: 'numeric', month: 'long' });
 const utc = (iso) => new Date(`${iso}T00:00:00Z`);
-const todayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Vienna' }).format(new Date());
 
 function isoWeek(iso) {
   const d = utc(iso);
@@ -50,10 +50,10 @@ function renderTiles(range, stats, daily) {
   if (daily?.length) {
     const count = (fn) => daily.filter(fn).length;
     tiles.push(
-      tile('Regentage (≥ 1 mm)', count((d) => d.rain >= 1)),
-      tile('Frosttage (Min < 0 °C)', count((d) => d.tmin < 0)),
-      tile('Sommertage (Max ≥ 25 °C)', count((d) => d.tmax >= 25)),
-      tile('Hitzetage (Max ≥ 30 °C)', count((d) => d.tmax >= 30)),
+      tile('Regentage (≥ 1 mm)', count((d) => d.rain_sum >= 1)),
+      tile('Frosttage (Min < 0 °C)', count((d) => d.outTemp_min < 0)),
+      tile('Sommertage (Max ≥ 25 °C)', count((d) => d.outTemp_max >= 25)),
+      tile('Hitzetage (Max ≥ 30 °C)', count((d) => d.outTemp_max >= 30)),
     );
   } else {
     tiles.push(
@@ -82,7 +82,7 @@ async function load() {
   document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.range === state.range)));
   $('date').value = state.date;
 
-  const data = await getJson(`/api/period?range=${state.range}&date=${state.date}`);
+  const data = await getJson(API.period(state.range, state.date));
   if (ticket !== loading) return; // schneller weitergeklickt
   const p = data.period;
   current = p;
@@ -108,8 +108,7 @@ async function load() {
   $('intraday').hidden = !intraday;
   $('daily').hidden = intraday;
   if (intraday) {
-    renderSeries({ temp: 'cTemp', rain: 'cRain', wind: 'cWind', dir: 'cDir', baro: 'cBaro', hum: 'cHum', rad: 'cRad' },
-      data.series, { stepHours: p.range === 'week' ? 24 : 3 });
+    renderSeries(SERIES_IDS, data.series, { stepHours: p.range === 'week' ? 24 : 3 });
     renderLake('cLake', data.lake);
   } else {
     renderDaily({ temp: 'dTemp', rain: 'dRain', wind: 'dWind', baro: 'dBaro', hum: 'dHum', sun: 'dSun' }, data.daily);

@@ -4,6 +4,9 @@ import { hm, num, dayFmt, timeFmt, dt } from './format.js';
 const weekdayFmt = new Intl.DateTimeFormat('de-AT', { timeZone: 'Europe/Vienna', weekday: 'short', day: '2-digit', month: '2-digit' });
 const monthFmt = new Intl.DateTimeFormat('de-AT', { timeZone: 'UTC', month: 'short' });
 
+/** Standard-IDs der 24-h-Diagramme (Startseite, Verlauf Tag/Woche, Schaufenster) */
+export const SERIES_IDS = { temp: 'cTemp', rain: 'cRain', wind: 'cWind', dir: 'cDir', baro: 'cBaro', hum: 'cHum', rad: 'cRad' };
+
 export const COLORS = {
   temp: '#e8590c', dew: '#1c7ed6', rain: '#1c7ed6', wind: '#2f9e44', gust: '#94d82d',
   dir: '#7048e8', baro: '#868e96', hum: '#0c8599', rad: '#f59f00', sun: '#ffd43b',
@@ -109,7 +112,7 @@ function draw(id, config) {
 }
 
 /**
- * Verlaufsdiagramme aus /api/series. ids: { temp, rain, wind, dir, baro, hum, rad }
+ * Verlaufsdiagramme aus /api/site/series. ids: { temp, rain, wind, dir, baro, hum, rad }
  * tooltips: Tooltips anzeigen (Homepage ja, Schaufenster nein)
  * stepHours: Achsenstriche (3 = Tag, 24 = Woche)
  */
@@ -195,7 +198,7 @@ const floodLabels = {
   },
 };
 
-/** Bodensee aus /api/lake: Wassertemperatur, Pegel, langjähriges Mittel, Hochwasserlinien */
+/** Bodensee aus /api/site/lake: Wassertemperatur, Pegel, langjähriges Mittel, Hochwasserlinien */
 export function renderLake(id, { days, flood }, { tooltips = true } = {}) {
   if (!days.length) return;
   const t = (d) => Date.parse(`${d.date}T12:00:00Z`);
@@ -227,7 +230,7 @@ export function renderLake(id, { days, flood }, { tooltips = true } = {}) {
 
 // --- Tageswerte (Monat, Jahr) ---------------------------------------------------
 
-const dayX = (d) => (d.day + 43200) * 1000;
+const dayX = (d) => (d.unix + 43200) * 1000;
 const dxy = (days, key) => days.map((d) => ({ x: dayX(d), y: d[key] }));
 const band = (color) => `${color}33`;
 
@@ -241,7 +244,7 @@ function dailyTooltip(unit, digits = 1) {
 }
 
 /**
- * Diagramme aus Tageswerten (/api/period, daily). ids: { temp, rain, wind, baro, hum, sun }
+ * Diagramme aus Tageswerten (aggregateRows 'day', Spalten wie outTemp_max). ids: { temp, rain, wind, baro, hum, sun }
  * Min/Max als Band, Mittel als Linie.
  */
 export function renderDaily(ids, days) {
@@ -256,15 +259,15 @@ export function renderDaily(ids, days) {
   ];
 
   draw(ids.temp, { type: 'line', data: { datasets: [
-    line(dxy(days, 'tmax'), COLORS.temp, { ...daily, label: 'Max', borderWidth: 1.5 }),
-    line(dxy(days, 'tavg'), COLORS.baro, { ...daily, label: 'Mittel', borderWidth: 1.5 }),
-    line(dxy(days, 'tmin'), COLORS.dew, { ...daily, label: 'Min', borderWidth: 1.5 }),
+    line(dxy(days, 'outTemp_max'), COLORS.temp, { ...daily, label: 'Max', borderWidth: 1.5 }),
+    line(dxy(days, 'outTemp_avg'), COLORS.baro, { ...daily, label: 'Mittel', borderWidth: 1.5 }),
+    line(dxy(days, 'outTemp_min'), COLORS.dew, { ...daily, label: 'Min', borderWidth: 1.5 }),
   ] }, options: { scales: { x, y: yAxis() }, plugins: { tooltip: dailyTooltip('°C') } } });
 
   let total = 0;
-  const cumulative = days.map((d) => ({ x: dayX(d), y: (total += d.rain ?? 0) }));
+  const cumulative = days.map((d) => ({ x: dayX(d), y: (total += d.rain_sum ?? 0) }));
   draw(ids.rain, { data: { datasets: [
-    { type: 'bar', label: 'Tagessumme', data: dxy(days, 'rain'), backgroundColor: COLORS.rain, barPercentage: 1, categoryPercentage: 0.85, yAxisID: 'y' },
+    { type: 'bar', label: 'Tagessumme', data: dxy(days, 'rain_sum'), backgroundColor: COLORS.rain, barPercentage: 1, categoryPercentage: 0.85, yAxisID: 'y' },
     { type: 'line', label: 'Summe', data: cumulative, borderColor: COLORS.baro, borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' },
   ] }, options: { scales: {
     x: { ...x, offset: false },
@@ -273,23 +276,23 @@ export function renderDaily(ids, days) {
   }, plugins: { tooltip: dailyTooltip('mm') } } });
 
   draw(ids.wind, { type: 'line', data: { datasets: [
-    line(dxy(days, 'gust'), COLORS.gust, { ...daily, label: 'Stärkste Böe', borderWidth: 1.5 }),
-    line(dxy(days, 'wavg'), COLORS.wind, { ...daily, label: 'Mittel' }),
+    line(dxy(days, 'windGust_max'), COLORS.gust, { ...daily, label: 'Stärkste Böe', borderWidth: 1.5 }),
+    line(dxy(days, 'windSpeed_avg'), COLORS.wind, { ...daily, label: 'Mittel' }),
   ] }, options: { scales: { x, y: yAxis({ min: 0 }) }, plugins: { tooltip: dailyTooltip('km/h') } } });
 
   draw(ids.baro, { type: 'line', data: { datasets: [
-    ...bandPair('pmin', 'pmax', COLORS.baro, 'Luftdruck'),
-    line(dxy(days, 'pavg'), COLORS.baro, { ...daily, label: 'Mittel' }),
+    ...bandPair('barometer_min', 'barometer_max', COLORS.baro, 'Luftdruck'),
+    line(dxy(days, 'barometer_avg'), COLORS.baro, { ...daily, label: 'Mittel' }),
   ] }, options: { scales: { x, y: yAxis({ ticks: { callback: (v) => num(v, 0) } }) }, plugins: { tooltip: dailyTooltip('hPa') } } });
 
   draw(ids.hum, { type: 'line', data: { datasets: [
-    ...bandPair('hmin', 'hmax', COLORS.hum, 'Feuchte'),
-    line(dxy(days, 'havg'), COLORS.hum, { ...daily, label: 'Mittel' }),
+    ...bandPair('outHumidity_min', 'outHumidity_max', COLORS.hum, 'Feuchte'),
+    line(dxy(days, 'outHumidity_avg'), COLORS.hum, { ...daily, label: 'Mittel' }),
   ] }, options: { scales: { x, y: yAxis({ max: 100 }) }, plugins: { tooltip: dailyTooltip('%', 0) } } });
 
   draw(ids.sun, { data: { datasets: [
-    { type: 'bar', label: 'Sonnenschein', data: dxy(days, 'sunshine'), backgroundColor: COLORS.sun, barPercentage: 1, categoryPercentage: 0.85, yAxisID: 'y' },
-    { type: 'line', label: 'Max. Strahlung', data: dxy(days, 'radmax'), borderColor: COLORS.rad, borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' },
+    { type: 'bar', label: 'Sonnenschein', data: days.map((d) => ({ x: dayX(d), y: d.sunshine_sum == null ? null : d.sunshine_sum / 60 })), backgroundColor: COLORS.sun, barPercentage: 1, categoryPercentage: 0.85, yAxisID: 'y' },
+    { type: 'line', label: 'Max. Strahlung', data: dxy(days, 'radiation_max'), borderColor: COLORS.rad, borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' },
   ] }, options: { scales: {
     x: { ...x, offset: false },
     y: yAxis({ min: 0, title: { display: true, text: 'h' } }),

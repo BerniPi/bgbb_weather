@@ -23,6 +23,16 @@ export const dt = (unix) => (unix == null ? '–' : dateTimeFmt.format(unix * 10
 export const date = (unix) => (unix == null ? '–' : dateFmt.format(unix * 1000));
 /** Unix-Sekunden → 'TT.MM.' */
 export const day = (unix) => (unix == null ? '–' : dayFmt.format(unix * 1000));
+/** Heutiges Datum in Wien als 'YYYY-MM-DD' */
+export const todayIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+
+/** 'YYYY-MM-DD' plus n Tage */
+export function addDaysIso(iso, n) {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 /** 'YYYY-MM-DD' → 'Sonntag, 2. November 2025' */
 export const longDate = (iso) => longDateFmt.format(new Date(`${iso}T12:00:00Z`));
 

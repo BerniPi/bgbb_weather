@@ -21,6 +21,15 @@ function offsetAt(unix) {
   return (Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s) / 1000) - unix;
 }
 
+/** Unix-Sekunden → ISO 8601 in Ortszeit mit Versatz, z. B. '2024-07-01T13:05+02:00' */
+export function isoLocal(unix) {
+  const p = localParts(unix);
+  const off = offsetAt(unix) / 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  const sign = off >= 0 ? '+' : '-';
+  return `${p.y}-${pad(p.mo)}-${pad(p.d)}T${pad(p.h)}:${pad(p.mi)}${sign}${pad(Math.floor(Math.abs(off) / 60))}:${pad(Math.abs(off) % 60)}`;
+}
+
 /** 'YYYY-MM-DD HH:MM[:SS]' in Wiener Ortszeit → Unix-Sekunden */
 export function localToUnix(str) {
   const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(str);

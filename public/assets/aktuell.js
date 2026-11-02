@@ -1,19 +1,19 @@
 // Startseite „Aktuell“
-import { $, num, signed, hm, dt, day, longDate, relative, compass, weatherIcon, dl, repeat, getJson } from './format.js';
-import { setupCharts, renderSeries, renderLake } from './charts.js';
+import { $, num, signed, hm, dt, longDate, relative, compass, weatherIcon, dl, repeat, getJson } from './format.js';
+import { setupCharts, renderSeries, renderLake, SERIES_IDS } from './charts.js';
+import { API } from './api.js';
+import { isStale, almanacItems, stormWarning } from './panels.js';
 import { renderLayout } from './layout.js';
 import { row, statRows } from './stats.js';
 
 const at = (e) => (e ? hm(e.time) : '');
 const v = (e, d = 1) => num(e?.value, d);
 const dir = (deg) => (deg == null ? '' : ` <span class="t">${compass(deg)}</span>`);
-const STALE_AFTER = 15 * 60;
 
 function renderWeather(w) {
   const t = w.today ?? {};
   $('dataTime').textContent = dt(w.time);
-  const stale = Date.now() / 1000 - w.time > STALE_AFTER;
-  $('stale').hidden = !stale;
+  $('stale').hidden = !isStale(w.time);
   $('stale').textContent = `Keine aktuellen Messdaten – letzte Messung ${dt(w.time)}`;
 
   $('icon').innerHTML = weatherIcon(w);
@@ -68,44 +68,32 @@ function renderLakeNow(l) {
   ].join('');
 }
 
-function renderAlmanac({ sun, moon }) {
-  const seasons = [['Tagundnachtgleiche', sun.equinox], ['Sonnenwende', sun.solstice]].sort((a, b) => a[1] - b[1]);
-  dl($('sun'), [
-    ['Aufgang', hm(sun.rise)],
-    ['Höchststand', hm(sun.transit)],
-    ['Untergang', hm(sun.set)],
-    ['Tageslänge', sun.rise && sun.set ? `${Math.floor((sun.set - sun.rise) / 3600)} h ${Math.round(((sun.set - sun.rise) % 3600) / 60)} min` : '–'],
-    ...seasons.map(([k, t]) => [`nächste ${k}`, `${day(t)} ${hm(t)}`]),
-  ]);
-  const times = [['Aufgang', moon.rise], ['Höchststand', moon.transit], ['Untergang', moon.set]]
-    .filter(([, t]) => t != null).sort((a, b) => a[1] - b[1]).map(([k, t]) => [k, hm(t)]);
-  const phases = [['nächster Vollmond', moon.nextFull], ['nächster Neumond', moon.nextNew]]
-    .sort((a, b) => a[1] - b[1]).map(([k, t]) => [k, day(t)]);
-  dl($('moon'), [...times, ['Phase', `${moon.phase} (${moon.illumination} %)`], ...phases]);
+function renderAlmanac(almanac) {
+  const items = almanacItems(almanac);
+  dl($('sun'), items.sun);
+  dl($('moon'), items.moon);
 }
 
-function renderStorm(s) {
-  const level = s?.ost ?? 0;
+function renderStorm(storm) {
+  const warning = stormWarning(storm);
   const el = $('storm');
-  el.hidden = level === 0;
-  el.className = `banner level-${level}`;
-  el.textContent = level === 90
-    ? 'Sturmwarnung Bodensee Ost – Sturmböen über 60 km/h erwartet'
-    : 'Starkwindwarnung Bodensee Ost – Windböen über 45 km/h erwartet';
+  el.hidden = !warning;
+  if (warning) {
+    el.className = `banner level-${warning.level}`;
+    el.textContent = warning.text;
+  }
 }
 
 async function loadCurrent() {
-  const data = await getJson('/api/current');
+  const data = await getJson(API.current);
   if (data.weather) renderWeather(data.weather);
   renderLakeNow(data.lake);
   renderAlmanac(data.almanac);
   renderStorm(data.storm);
 }
 
-const SERIES_IDS = { temp: 'cTemp', rain: 'cRain', wind: 'cWind', dir: 'cDir', baro: 'cBaro', hum: 'cHum', rad: 'cRad' };
-
 async function loadCharts() {
-  const [series, lake] = await Promise.all([getJson('/api/series?hours=24'), getJson('/api/lake?days=28')]);
+  const [series, lake] = await Promise.all([getJson(API.series()), getJson(API.lake())]);
   renderSeries(SERIES_IDS, series);
   renderLake('cLake', lake);
 }

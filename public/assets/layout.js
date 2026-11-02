@@ -4,8 +4,8 @@ const PAGES = [
   { href: '/verlauf', label: 'Verlauf' },
   { href: '/klima', label: 'Klima', soon: true },
   { href: '/bodensee', label: 'Bodensee', soon: true },
-  { href: '/export', label: 'Export', soon: true },
-  { href: '/api', label: 'API', soon: true },
+  { href: '/export', label: 'Export' },
+  { href: '/api', label: 'API' },
   { href: '/station', label: 'Station', soon: true },
 ];
 

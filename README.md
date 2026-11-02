@@ -69,34 +69,72 @@ alten `lib.php`, `src/sunshine.js`).
 | **Export**   | Zeitraum, Detail- oder Tageswerte, Feldauswahl, Vorschau → Download |
 | **schule_neu.php** | Bildschirm im Schaufenster: Aktuell + Bodensee + Astronomie + 8 Diagramme |
 
-## Neue Website (Plan)
+## Neue Website
 
-| Pfad          | Inhalt |
-|---------------|--------|
-| `/`           | Aktuell – wie bisher inkl. „vor einem Jahr“ |
-| `/verlauf`    | Tag / Woche / Monat / Jahr **und frei wählbares Datum** (jeder Tag seit 2018 abrufbar) |
-| `/klima`      | Rekorde, Monats-/Jahrestabellen (Mitteltemperatur, Niederschlag, Regen-, Sommer-, Frosttage, Sonnenstunden), Monatsberichte als Tabelle statt NOAA-Text |
-| `/bodensee`   | Wassertemperatur und Pegel, Jahresvergleich, historischer Mittelwert |
-| `/export`     | Zeitraum, Auflösung (5 min / Stunde / Tag / Monat), Felder, Vorschau, Download CSV oder JSON |
-| `/api`        | Dokumentation der öffentlichen API mit Beispielen |
-| `/station`    | Station, Sensoren, Standort, Geschichte |
-| `/schule`     | Schaufenster-Anzeige (fertig als erster Entwurf) |
+| Pfad          | Inhalt | Stand |
+|---------------|--------|-------|
+| `/`           | Aktuell inkl. Heute, „vor einem Jahr“, Bodensee, Sonne/Mond, 24-h-Diagramme | fertig |
+| `/verlauf`    | Tag / Woche / Monat / Jahr, jeder Zeitraum seit 2018, teilbare URL | fertig |
+| `/export`     | Zeitraum, Auflösung (5 min bis Jahr), Messgrößen, Vorschau, CSV/Excel/JSON | fertig |
+| `/api`        | Dokumentation der öffentlichen API mit Beispielen | fertig |
+| `/schule`     | Schaufenster-Anzeige | fertig |
+| `/klima`      | Rekorde, Monats-/Jahrestabellen, Monatsberichte als Tabelle statt NOAA-Text | offen |
+| `/bodensee`   | Wassertemperatur und Pegel, Jahresvergleich, Hochwasser | offen |
+| `/station`    | Station, Sensoren, Standort, Geschichte | offen |
+| Livewerte     | Loop-Pakete alle 2,5 s per MQTT → Server-Sent Events | offen |
 
-### Öffentliche API `/api/v1` (Plan)
+### Öffentliche API `/api/v1`
 
-Alle Werte in °C, hPa, mm, mm/h, km/h, W/m²; Zeiten als ISO 8601 und Unix-Zeit.
+Alle Werte in °C, hPa, mm, mm/h, km/h, W/m²; Zeiten als ISO 8601 (Wiener Ortszeit) und Unix-Zeit.
+Ausführliche Doku mit Beispielen unter `/api`.
 
 | Endpunkt | Beschreibung |
 |----------|--------------|
-| `GET /api/v1/current` | aktuelle Werte + Extremwerte heute |
-| `GET /api/v1/archive?from=&to=&fields=&format=json\|csv` | Rohdaten (5 min), Zeitraum begrenzt |
-| `GET /api/v1/aggregate?from=&to=&interval=hour\|day\|month&fields=&format=` | Mittel/Min/Max/Summe je Intervall |
-| `GET /api/v1/records` | Rekorde |
-| `GET /api/v1/lake?from=&to=` | Bodensee |
+| `GET /api/v1/current` | aktuelle Werte, Extremwerte heute und vor einem Jahr, Bodensee, Sturm, Sonne/Mond |
+| `GET /api/v1/data?from=&to=&interval=raw|hour|day|month|year&fields=&format=json|csv` | Messreihen; `csv=de` für Excel, `download=1`, `preview=n` |
+| `GET /api/v1/lake?from=&to=` | Bodensee-Tageswerte |
 | `GET /api/v1/almanac?date=` | Sonne und Mond |
-| `GET /api/v1/fields` | verfügbare Felder mit Einheit und Beschreibung |
+| `GET /api/v1/fields` | Messgrößen, Einheiten, Kennwerte, Datenzeitraum, Grenzen |
 
-Die Exportseite nutzt dieselbe API. Ein Rate-Limit schützt den kleinen Server.
+5-Minuten- und Stundenwerte höchstens 400 Tage pro Abfrage, `/data` und `/lake` höchstens
+120 Abfragen pro Minute und IP. CORS ist offen.
+
+## Projektstruktur
+
+```
+src/
+  server.js          Express: Router einhängen, statische Dateien
+  config.js          .env, Pfade, Standort
+  db.js              SQLite: weewx.sdb (nur lesen), app.db (+ status)
+  schema.js          Schema von app.db
+  time.js            Ortszeit Europe/Vienna, Kalenderzeiträume
+  units.js           Umrechnung Archiv-Einheiten → Anzeigeeinheiten
+  fields.js          Messgrößen der API (Name, Einheit, Kennwerte)
+  sunshine.js        Sonnenscheinschätzung aus der Strahlung
+  astro.js           Sonne, Mond, Jahreszeiten (astronomy-engine)
+  weather.js         aktuelle Werte, 5-min-Verläufe
+  summaries.js       Tagesstatistik aus archive_day_*
+  aggregate.js       Rohdaten und Aggregate (Stunde…Jahr) – für API, Export und Verlauf
+  period.js          Daten der Verlaufsseite
+  lake.js            Bodensee: speichern und abfragen
+  storm.js           Sturmwarnung: auswerten, speichern, abfragen
+  jobs.js            regelmäßige Abrufe (nur Holen, Speichern in lake.js/storm.js)
+  http.js            Request-Parameter (Datum, Zeitraum), Fehler 400
+  routes/site.js     /api/site/* – interne API der eigenen Seiten
+  routes/v1.js       /api/v1/*   – öffentliche API
+public/
+  index.html, verlauf.html, export.html, api.html, schule/
+  assets/
+    format.js        Zahlen, Datum, Symbole, kleine DOM-Helfer
+    api.js           alle API-Adressen
+    layout.js        Kopf und Fuß
+    charts.js        alle Diagramme (Chart.js)
+    stats.js         Statistik-Tabelle
+    panels.js        Sonne/Mond, Sturmwarnung, Aktualität (Startseite + Schaufenster)
+    site.css         Design, Steuerelemente; je Seite ergänzend <seite>.css/.js
+scripts/
+  migrate-dump.js    einmalig: Bodensee/Sturm aus altem MySQL-Dump
+```
 
 ## Umstieg ohne Datenverlust
 
@@ -118,7 +156,7 @@ auf Debian: `xset dpms` / `wlr-randr` bzw. HDMI-CEC (`cec-client`).
 npm install
 cp .env.example .env              # Pfade anpassen
 npm run migrate -- wetter.sql     # einmalig: Bodensee/Sturm → data/app.db
-npm run dev                       # http://localhost:8080/schule
+npm run dev                       # http://localhost:8080
 ```
 
 `data/weewx.sdb` = Kopie vom Pi (`/var/lib/weewx/weewx.sdb`). Datenbanken und Dumps sind

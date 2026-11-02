@@ -3,23 +3,10 @@
   display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
   margin-bottom: var(--gap); padding: 12px 16px;
 }
-.tabs { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; }
-.tabs button, .pager button, .pick button {
-  font: inherit; border: 0; background: transparent; color: var(--text);
-  padding: 6px 14px; border-radius: 6px; cursor: pointer;
-}
-.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 .pager { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; justify-content: center; }
 .pager h1 { margin: 0; font-size: 1.15rem; text-align: center; min-width: 0; }
-.pager button { font-size: 1.5rem; line-height: 1; padding: 4px 12px; background: var(--bg); }
-.pager button:disabled { opacity: 0.35; cursor: default; }
+.pager .btn { font-size: 1.5rem; line-height: 1; padding: 4px 12px; }
 .pick { display: flex; gap: 6px; }
-.pick input {
-  font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px;
-  background: var(--card); color: var(--text);
-}
-.pick button { background: var(--bg); }
-.tabs button:focus-visible, .pager button:focus-visible, .pick :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .empty { color: var(--muted); }
 .overview { margin-bottom: var(--gap); align-items: start; }
@@ -34,6 +21,6 @@
 
 @media (max-width: 700px) {
   .pager { order: -1; flex-basis: 100%; }
-  .tabs { flex: 1; }
-  .tabs button { flex: 1; padding: 6px 4px; }
+  .period-bar .seg { flex: 1 1 100%; flex-wrap: nowrap; }
+  .period-bar .seg button { flex: 1; padding: 6px 4px; }
 }

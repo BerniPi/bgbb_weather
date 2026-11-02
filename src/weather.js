@@ -1,10 +1,10 @@
-// Abfragen auf das weewx-Archiv und die App-Tabellen.
+// Aktuelle Werte und 5-Minuten-Verläufe aus dem weewx-Archiv.
 // Ausgabe immer in Anzeigeeinheiten (°C, hPa, mm, km/h), siehe units.js.
-import { weewx, app, getStatus } from './db.js';
+import { weewx } from './db.js';
 import { sunshinePercent, isSunny } from './sunshine.js';
-import { localDate, startOfLocalDay, localToUnix, period, addDays } from './time.js';
+import { localDate, startOfLocalDay, localToUnix } from './time.js';
 import { toDisplay } from './units.js';
-import { statsDays, dailyValues } from './summaries.js';
+import { statsDays } from './summaries.js';
 
 const COLS = `dateTime, usUnits, interval, outTemp, dewpoint, outHumidity, windchill, heatindex,
   barometer, pressure, windSpeed, windGust, windDir, windGustDir, rainRate, rain, radiation, UV`;
@@ -13,6 +13,7 @@ const stLatest = weewx.prepare(`SELECT ${COLS} FROM archive ORDER BY dateTime DE
 const stRange = weewx.prepare(`SELECT ${COLS} FROM archive WHERE dateTime > ? AND dateTime <= ? ORDER BY dateTime`);
 const stAt = weewx.prepare(`SELECT ${COLS} FROM archive WHERE dateTime <= ? ORDER BY dateTime DESC LIMIT 1`);
 const stLastRain = weewx.prepare('SELECT dateTime FROM archive WHERE rain > 0 ORDER BY dateTime DESC LIMIT 1');
+const stFirst = weewx.prepare('SELECT MIN(dateTime) AS t FROM archive');
 const stSunCandidates = weewx.prepare(`SELECT dateTime, radiation FROM archive
   WHERE dateTime > ? AND radiation > 40 ORDER BY dateTime DESC`);
 
@@ -20,55 +21,24 @@ const qLatest = () => { const r = stLatest.get(); return r && toDisplay(r); };
 const qAt = (t) => { const r = stAt.get(t); return r && toDisplay(r); };
 const qRange = (from, to) => stRange.all(from, to).map(toDisplay);
 
-// --- Statistik-Helfer ----------------------------------------------------------
+// --- Helfer für 5-Minuten-Datensätze ----------------------------------------------
 
-function extreme(rows, key, pick, dirKey) {
+function extreme(rows, key, pick) {
   let best = null;
   for (const r of rows) {
     const v = r[key];
     if (v != null && (best == null || pick(v, best.value))) {
       best = { value: v, time: r.dateTime };
-      if (dirKey) best.dir = r[dirKey];
     }
   }
   return best;
 }
-const max = (rows, key, dirKey) => extreme(rows, key, (a, b) => a > b, dirKey);
-const min = (rows, key) => extreme(rows, key, (a, b) => a < b);
+const max = (rows, key) => extreme(rows, key, (a, b) => a > b);
 const sum = (rows, key) => rows.reduce((s, r) => s + (r[key] ?? 0), 0);
 const avg = (rows, key) => {
   const vals = rows.map((r) => r[key]).filter((v) => v != null);
   return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
 };
-
-function sunshineMinutes(rows) {
-  return rows.reduce((m, r) => m + (sunshinePercent(r.dateTime, r.radiation) > 0 ? r.interval : 0), 0);
-}
-
-/** Extremwerte, Mittel und Summen über beliebige Datensätze (Tag, Woche, …) */
-export function stats(rows) {
-  if (!rows.length) return null;
-  return {
-    outTempMax: max(rows, 'outTemp'),
-    outTempMin: min(rows, 'outTemp'),
-    outTempAvg: avg(rows, 'outTemp'),
-    heatindexMax: max(rows, 'heatindex'),
-    windchillMin: min(rows, 'windchill'),
-    dewpointMax: max(rows, 'dewpoint'),
-    dewpointMin: min(rows, 'dewpoint'),
-    outHumidityMax: max(rows, 'outHumidity'),
-    outHumidityMin: min(rows, 'outHumidity'),
-    barometerMax: max(rows, 'barometer'),
-    barometerMin: min(rows, 'barometer'),
-    windSpeedMax: max(rows, 'windSpeed', 'windDir'),
-    windGustMax: max(rows, 'windGust', 'windGustDir'),
-    rain: sum(rows, 'rain'),
-    rainRateMax: max(rows, 'rainRate'),
-    UVMax: max(rows, 'UV'),
-    radiationMax: max(rows, 'radiation'),
-    sunshineMinutes: sunshineMinutes(rows),
-  };
-}
 
 function lastSunshine(now) {
   for (const r of stSunCandidates.iterate(now - 14 * 86400)) {
@@ -156,89 +126,7 @@ export function seriesRange(from, to) {
   return { records, rainHourly };
 }
 
-// --- Bodensee und Sturmwarnung ---------------------------------------------
-
-const qSeeLatest = app.prepare('SELECT * FROM see_data ORDER BY dateTime DESC LIMIT 1');
-const qSeeDay = app.prepare('SELECT * FROM see_days WHERE date = ?');
-const qSeeHist = app.prepare('SELECT * FROM see_hist WHERE day = ?');
-const qSeeDays = app.prepare(`SELECT d.date, d.temp05, d.stand, h.stand_mit
-  FROM see_days d LEFT JOIN see_hist h ON h.day = substr(d.date, 6)
-  WHERE d.date > ? ORDER BY d.date`);
-
-export function lake() {
-  const now = qSeeLatest.get();
-  if (!now) return null;
-  const today = localDate(now.dateTime);
-  const yesterday = qSeeDay.get(localDate(localToUnix(today) - 43200));
-  const lastYear = qSeeDay.get(`${+today.slice(0, 4) - 1}${today.slice(4)}`);
-  const hist = qSeeHist.get(today.slice(5));
-  const diff = (a, b) => (a != null && b != null ? a - b : null);
-  return {
-    time: now.dateTime,
-    temp05: now.temp05,
-    temp25: now.temp25,
-    stand: now.stand,
-    temp05Diff: diff(now.temp05, yesterday?.temp05),
-    temp25Diff: diff(now.temp25, yesterday?.temp25),
-    standDiff: diff(now.stand, yesterday?.stand),
-    hist: hist ? { min: hist.stand_min, mean: hist.stand_mit, max: hist.stand_max } : null,
-    lastYear: lastYear ? { temp05: lastYear.temp05, stand: lastYear.stand } : null,
-  };
-}
-
-// Bekannte Kennwerte Pegel Bregenz, falls der Abruf noch nicht gelaufen ist
-const FLOOD_DEFAULT = { HW2: 460, HW10: 512, HW20: 531, HW30: 540, HW50: 553, HW100: 568 };
-
-export function lakeSeries(days = 28) {
-  const from = localDate(Math.floor(Date.now() / 1000) - days * 86400);
-  return { days: qSeeDays.all(from), flood: getStatus('see')?.flood ?? FLOOD_DEFAULT };
-}
-
-export function storm() {
-  return getStatus('sturm');
-}
-
-// --- Verlauf: Kalenderzeiträume ----------------------------------------------
-
-const qSeeDaysRange = app.prepare(`SELECT d.date, d.temp05, d.stand, h.stand_mit
-  FROM see_days d LEFT JOIN see_hist h ON h.day = substr(d.date, 6)
-  WHERE d.date >= ? AND d.date <= ? ORDER BY d.date`);
-const stFirst = weewx.prepare('SELECT MIN(dateTime) AS t FROM archive');
-
-function lakeStats(days) {
-  const pick = (key, better) => days.reduce((b, d) => (d[key] != null && (b == null || better(d[key], b[key])) ? d : b), null);
-  const e = (d, key) => (d ? { value: d[key], date: d.date } : null);
-  return {
-    temp05Min: e(pick('temp05', (a, b) => a < b), 'temp05'),
-    temp05Max: e(pick('temp05', (a, b) => a > b), 'temp05'),
-    standMin: e(pick('stand', (a, b) => a < b), 'stand'),
-    standMax: e(pick('stand', (a, b) => a > b), 'stand'),
-  };
-}
-
-/** Daten für die Verlaufsseite: range = day|week|month|year, iso = Datum im Zeitraum */
-export function periodData(range, iso) {
-  const p = period(range, iso);
-  const latest = stLatest.get()?.dateTime ?? 0;
-  const until = Math.min(p.end, latest);
-  const base = {
-    period: p,
-    firstData: localDate(stFirst.get().t),
-    lastData: localDate(latest),
-  };
-  if (p.firstDay > latest) return { ...base, stats: null };
-
-  const periodDays = qSeeDaysRange.all(p.first, p.last);
-  const chartFrom = range === 'day' || range === 'week' ? addDays(p.last, -27) : p.first;
-  return {
-    ...base,
-    stats: statsDays(p.firstDay, p.lastDay, until),
-    series: range === 'day' || range === 'week' ? seriesRange(p.firstDay, until) : null,
-    daily: range === 'month' || range === 'year' ? dailyValues(p.firstDay, p.lastDay, until) : null,
-    lake: {
-      stats: lakeStats(periodDays),
-      days: qSeeDaysRange.all(chartFrom, p.last),
-      flood: getStatus('see')?.flood ?? FLOOD_DEFAULT,
-    },
-  };
+/** Zeitraum des Archivs: erster und letzter Datensatz (Unix-Zeit) */
+export function archiveSpan() {
+  return { first: stFirst.get()?.t ?? null, last: stLatest.get()?.dateTime ?? null };
 }

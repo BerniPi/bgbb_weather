@@ -1,11 +1,12 @@
 // Schaufenster-Anzeige: lädt die Daten selbst nach, kein Neuladen der Seite nötig
-import { $, num, signed, hm, dt, day, compass, weatherIcon, dl, repeat, getJson, timeFmt } from '/assets/format.js';
-import { setupCharts, renderSeries, renderLake } from '/assets/charts.js';
+import { $, num, signed, hm, dt, compass, weatherIcon, dl, repeat, getJson, timeFmt } from '/assets/format.js';
+import { setupCharts, renderSeries, renderLake, SERIES_IDS } from '/assets/charts.js';
+import { API } from '/assets/api.js';
+import { isStale, almanacItems, stormWarning } from '/assets/panels.js';
 
 const CURRENT_EVERY = 60 * 1000;
 const CHARTS_EVERY = 5 * 60 * 1000;
 const RELOAD_EVERY = 6 * 60 * 60 * 1000; // frischer Start gegen Speicherlecks im Dauerbetrieb
-const STALE_AFTER = 15 * 60; // Sekunden
 
 const at = (e) => (e ? hm(e.time) : '');
 const paren = (v, d) => (v == null ? '' : `(${signed(v, d)})`);
@@ -17,7 +18,7 @@ function row(label, value, extra = '', cls = '') {
 function renderWeather(w) {
   const t = w.today ?? {};
   $('dataTime').textContent = dt(w.time);
-  $('stale').hidden = Date.now() / 1000 - w.time < STALE_AFTER;
+  $('stale').hidden = !isStale(w.time);
   $('stale').textContent = 'Keine aktuellen Messdaten';
 
   $('icon').innerHTML = weatherIcon(w);
@@ -57,42 +58,32 @@ function renderLakeNow(l) {
   ]);
 }
 
-function renderAlmanac({ sun, moon }) {
-  const seasons = [['Tagundnachtgleiche', sun.equinox], ['Sonnenwende', sun.solstice]]
-    .sort((a, b) => a[1] - b[1]);
-  dl($('sun'), [
-    ['Aufgang', hm(sun.rise)],
-    ['Mittag', hm(sun.transit)],
-    ['Untergang', hm(sun.set)],
-    ...seasons.map(([k, v]) => [k, day(v)]),
-  ]);
-  const moonTimes = [['Aufgang', moon.rise], ['Untergang', moon.set]]
-    .filter(([, v]) => v != null).sort((a, b) => a[1] - b[1]).map(([k, v]) => [k, hm(v)]);
-  const phases = [['Vollmond', moon.nextFull], ['Neumond', moon.nextNew]]
-    .sort((a, b) => a[1] - b[1]).map(([k, v]) => [k, day(v)]);
-  dl($('moon'), [...moonTimes, ...phases, ['Phase', moon.phase], ['beleuchtet', `${moon.illumination} %`]]);
+function renderAlmanac(almanac) {
+  const items = almanacItems(almanac, { compact: true });
+  dl($('sun'), items.sun);
+  dl($('moon'), items.moon);
 }
 
-function renderStorm(s) {
+function renderStorm(storm) {
+  const warning = stormWarning(storm);
   const el = $('storm');
-  const level = s?.ost ?? 0;
-  el.hidden = level === 0;
-  el.className = `storm level-${level}`;
-  el.textContent = level === 90 ? 'STURMWARNUNG Bodensee' : 'Starkwindwarnung Bodensee';
+  el.hidden = !warning;
+  if (warning) {
+    el.className = `storm level-${warning.level}`;
+    el.textContent = warning.short;
+  }
 }
 
 async function loadCurrent() {
-  const data = await getJson('/api/current');
+  const data = await getJson(API.current);
   if (data.weather) renderWeather(data.weather);
   renderLakeNow(data.lake);
   renderAlmanac(data.almanac);
   renderStorm(data.storm);
 }
 
-const SERIES_IDS = { temp: 'cTemp', rain: 'cRain', wind: 'cWind', dir: 'cDir', baro: 'cBaro', hum: 'cHum', rad: 'cRad' };
-
 async function loadCharts() {
-  const [series, lake] = await Promise.all([getJson('/api/series?hours=24'), getJson('/api/lake?days=28')]);
+  const [series, lake] = await Promise.all([getJson(API.series()), getJson(API.lake())]);
   renderSeries(SERIES_IDS, series, { tooltips: false });
   renderLake('cLake', lake, { tooltips: false });
 }

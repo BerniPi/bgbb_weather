@@ -1,0 +1,33 @@
+/* Exportseite */
+.export-form { grid-template-columns: 1.2fr 1fr 1fr; align-items: start; }
+@media (max-width: 1000px) { .export-form { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px) { .export-form { grid-template-columns: 1fr; } }
+
+.export-form h3 { margin: 16px 0 8px; font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+.range { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.range label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.quick .btn { padding: 4px 10px; font-size: 0.85rem; }
+
+.fields { display: grid; grid-template-columns: 1fr; gap: 4px; }
+.fields label { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; cursor: pointer; }
+.fields label span { color: var(--muted); font-size: 0.85rem; margin-left: auto; white-space: nowrap; }
+.link { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; }
+
+.formats { display: flex; flex-direction: column; gap: 10px; }
+.formats label { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; cursor: pointer; }
+.formats label span { grid-column: 2; color: var(--muted); font-size: 0.85rem; }
+.actions { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.actions .btn.primary { padding: 9px 20px; }
+.actions .btn[aria-disabled="true"] { opacity: 0.4; pointer-events: none; }
+.count { color: var(--muted); font-size: 0.9rem; }
+.error { color: var(--danger); font-weight: 600; margin: 10px 0 0; }
+.apiurl { margin-top: 14px; font-size: 0.85rem; }
+.apiurl summary { cursor: pointer; color: var(--muted); }
+.apiurl code { display: block; margin-top: 6px; padding: 8px; background: var(--bg); border-radius: 6px; word-break: break-all; }
+
+.preview { margin-top: var(--gap); }
+#preview { border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#preview th, #preview td { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+#preview th { color: var(--muted); font-weight: 600; vertical-align: bottom; white-space: normal; min-width: 5em; }
+#preview th:first-child, #preview td:first-child { text-align: left; position: sticky; left: 0; background: var(--card); }

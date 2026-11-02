@@ -8,14 +8,14 @@ import { toDisplay } from './units.js';
 const usUnits = weewx.prepare('SELECT usUnits FROM archive ORDER BY dateTime DESC LIMIT 1').get()?.usUnits ?? 1;
 
 /** Wert eines Tageszusammenfassungs-Feldes in Anzeigeeinheiten */
-function convert(obs, value) {
+export function convert(obs, value) {
   if (value == null) return null;
   const key = obs === 'wind' ? 'windGust' : obs;
   return toDisplay({ usUnits, [key]: value })[key];
 }
 
 const cache = new Map();
-function prepared(sql) {
+export function prepared(sql) {
   if (!cache.has(sql)) cache.set(sql, weewx.prepare(sql));
   return cache.get(sql);
 }
@@ -45,33 +45,8 @@ const avgOf = (obs, from, to) => {
 const stDirAt = weewx.prepare('SELECT windDir FROM archive WHERE dateTime >= ? ORDER BY dateTime LIMIT 1');
 const stSun = weewx.prepare('SELECT dateTime, interval, radiation FROM archive WHERE dateTime > ? AND dateTime <= ? AND radiation > 40');
 
-function sunshineMinutes(from, to) {
-  let minutes = 0;
-  for (const r of stSun.iterate(from, to)) {
-    if (sunshinePercent(r.dateTime, r.radiation) > 0) minutes += r.interval;
-  }
-  return minutes;
-}
-
-const stDaily = weewx.prepare(`SELECT t.dateTime AS day,
-    t.min AS tmin, t.max AS tmax, t.wsum / t.sumtime AS tavg,
-    r.sum AS rain,
-    ws.wsum / ws.sumtime AS wavg, w.max AS gust,
-    b.min AS pmin, b.max AS pmax, b.wsum / b.sumtime AS pavg,
-    h.min AS hmin, h.max AS hmax, h.wsum / h.sumtime AS havg,
-    rad.max AS radmax
-  FROM archive_day_outTemp t
-  LEFT JOIN archive_day_rain r USING (dateTime)
-  LEFT JOIN archive_day_windSpeed ws USING (dateTime)
-  LEFT JOIN archive_day_wind w USING (dateTime)
-  LEFT JOIN archive_day_barometer b USING (dateTime)
-  LEFT JOIN archive_day_outHumidity h USING (dateTime)
-  LEFT JOIN archive_day_radiation rad USING (dateTime)
-  WHERE t.dateTime >= ? AND t.dateTime <= ? AND t.count > 0
-  ORDER BY t.dateTime`);
-
 /** Sonnenscheinminuten je Tag; dayStarts aufsteigend sortiert */
-function sunshineByDay(dayStarts, end) {
+export function sunshineByDay(dayStarts, end) {
   const minutes = new Array(dayStarts.length).fill(0);
   let i = 0;
   for (const r of stSun.iterate(dayStarts[0], end)) {
@@ -79,24 +54,6 @@ function sunshineByDay(dayStarts, end) {
     if (sunshinePercent(r.dateTime, r.radiation) > 0) minutes[i] += r.interval;
   }
   return minutes;
-}
-
-/** Tageswerte für Monats- und Jahresdiagramme, in Anzeigeeinheiten */
-export function dailyValues(firstDay, lastDay, end) {
-  const rows = stDaily.all(firstDay, lastDay);
-  if (!rows.length) return [];
-  const sun = sunshineByDay(rows.map((r) => r.day), end);
-  const c = convert;
-  return rows.map((r, i) => ({
-    day: r.day,
-    tmin: c('outTemp', r.tmin), tmax: c('outTemp', r.tmax), tavg: c('outTemp', r.tavg),
-    rain: c('rain', r.rain ?? 0),
-    wavg: c('windSpeed', r.wavg), gust: c('wind', r.gust),
-    pmin: c('barometer', r.pmin), pmax: c('barometer', r.pmax), pavg: c('barometer', r.pavg),
-    hmin: r.hmin, hmax: r.hmax, havg: r.havg,
-    radmax: r.radmax,
-    sunshine: sun[i] / 60,
-  }));
 }
 
 /**
@@ -128,6 +85,6 @@ export function statsDays(firstDay, lastDay, until = lastDay + 86400) {
     rainRateMax: maxOf('rainRate', firstDay, lastDay),
     UVMax: maxOf('UV', firstDay, lastDay),
     radiationMax: maxOf('radiation', firstDay, lastDay),
-    sunshineMinutes: sunshineMinutes(firstDay, Math.min(until, lastDay + 86400)),
+    sunshineMinutes: sunshineByDay([firstDay], Math.min(until, lastDay + 86400))[0],
   };
 }
