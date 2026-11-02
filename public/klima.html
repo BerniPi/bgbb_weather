@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Klima – Wetter BG Blumenstraße Bregenz</title>
+  <meta name="description" content="Rekorde, Monats- und Jahreswerte sowie Monatsberichte der Wetterstation BG Blumenstraße seit 2018.">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/klima.css">
+  <script src="/assets/klima.js" type="module"></script>
+</head>
+<body>
+  <header class="site"></header>
+
+  <main>
+    <h1 class="page-title">Klima</h1>
+    <p class="lead">Rekorde, Monats- und Jahreswerte seit <span id="since">Beginn der Aufzeichnung</span>.
+      Kenntage nach Definition des Deutschen Wetterdienstes.</p>
+
+    <h2 class="section-title">Rekorde</h2>
+    <section class="grid cols-3" id="records"></section>
+
+    <h2 class="section-title">Monats- und Jahreswerte</h2>
+    <section class="card">
+      <div class="seg measures" id="measure"></div>
+      <div class="table-wrap"><table class="climate" id="table"></table></div>
+      <p class="hint" id="measureHint"></p>
+    </section>
+
+    <h2 class="section-title">Monatsbericht</h2>
+    <section class="card">
+      <div class="report-bar">
+        <button class="btn" id="prevMonth" aria-label="Voriger Monat">‹</button>
+        <input type="month" class="input" id="month" aria-label="Monat wählen">
+        <button class="btn" id="nextMonth" aria-label="Nächster Monat">›</button>
+        <a class="btn" id="toVerlauf" href="#">Im Verlauf ansehen</a>
+      </div>
+      <div class="table-wrap"><table class="report" id="report"></table></div>
+    </section>
+  </main>
+
+  <footer class="site"></footer>
+</body>
+</html>

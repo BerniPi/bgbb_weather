@@ -13,6 +13,7 @@ export const timeFmt = new Intl.DateTimeFormat('de-AT', { timeZone: TZ, hour: '2
 const dateTimeFmt = new Intl.DateTimeFormat('de-AT', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const dateFmt = new Intl.DateTimeFormat('de-AT', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
 export const dayFmt = new Intl.DateTimeFormat('de-AT', { timeZone: TZ, day: '2-digit', month: '2-digit' });
+const weekdayFmt = new Intl.DateTimeFormat('de-AT', { timeZone: 'UTC', weekday: 'short' });
 const longDateFmt = new Intl.DateTimeFormat('de-AT', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 /** Unix-Sekunden → 'HH:MM' */
@@ -32,6 +33,9 @@ export function addDaysIso(iso, n) {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+
+/** 'YYYY-MM-DD' → 'So.' */
+export const weekday = (iso) => weekdayFmt.format(new Date(`${iso}T12:00:00Z`));
 
 /** 'YYYY-MM-DD' → 'Sonntag, 2. November 2025' */
 export const longDate = (iso) => longDateFmt.format(new Date(`${iso}T12:00:00Z`));

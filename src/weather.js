@@ -3,7 +3,7 @@
 import { weewx } from './db.js';
 import { sunshinePercent, isSunny } from './sunshine.js';
 import { localDate, startOfLocalDay, localToUnix } from './time.js';
-import { toDisplay } from './units.js';
+import { cleanRow } from './corrections.js';
 import { statsDays } from './summaries.js';
 
 const COLS = `dateTime, usUnits, interval, outTemp, dewpoint, outHumidity, windchill, heatindex,
@@ -17,9 +17,9 @@ const stFirst = weewx.prepare('SELECT MIN(dateTime) AS t FROM archive');
 const stSunCandidates = weewx.prepare(`SELECT dateTime, radiation FROM archive
   WHERE dateTime > ? AND radiation > 40 ORDER BY dateTime DESC`);
 
-const qLatest = () => { const r = stLatest.get(); return r && toDisplay(r); };
-const qAt = (t) => { const r = stAt.get(t); return r && toDisplay(r); };
-const qRange = (from, to) => stRange.all(from, to).map(toDisplay);
+const qLatest = () => { const r = stLatest.get(); return r && cleanRow(r); };
+const qAt = (t) => { const r = stAt.get(t); return r && cleanRow(r); };
+const qRange = (from, to) => stRange.all(from, to).map(cleanRow);
 
 // --- Helfer für 5-Minuten-Datensätze ----------------------------------------------
 

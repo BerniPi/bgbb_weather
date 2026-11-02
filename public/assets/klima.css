@@ -1,0 +1,21 @@
+/* Klima-Seite */
+.record h2 { margin-bottom: 6px; }
+.record .t { width: auto; }
+
+.measures { margin-bottom: 12px; }
+table.climate, table.report {
+  border-collapse: collapse; font-size: 0.88rem; font-variant-numeric: tabular-nums; white-space: nowrap; width: 100%;
+}
+.climate th, .climate td, .report th, .report td { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.climate th, .report th { color: var(--muted); font-weight: 600; }
+.climate th:first-child, .climate td:first-child, .report th:first-child, .report td:first-child {
+  text-align: left; position: sticky; left: 0; background: var(--card); font-weight: 600;
+}
+.climate td.total, .climate th.total { border-left: 2px solid var(--line); font-weight: 700; }
+.climate tr.mean td { border-top: 2px solid var(--line); color: var(--muted); font-style: italic; }
+.climate td.partial { color: var(--muted); }
+.climate td { border-radius: 4px; }
+
+.report-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.report td small { color: var(--muted); margin-left: 4px; }
+.report tfoot td { font-weight: 700; border-top: 2px solid var(--line); border-bottom: 0; }

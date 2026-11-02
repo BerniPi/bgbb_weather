@@ -1,7 +1,7 @@
 // Rohdaten (5 min) und Aggregate (Stunde, Tag, Monat, Jahr) für API, Export und Verlaufsseite.
 // Alle Werte in Anzeigeeinheiten (°C, hPa, mm, km/h, W/m²).
 import { weewx } from './db.js';
-import { toDisplay } from './units.js';
+import { cleanRow, excludedDays } from './corrections.js';
 import { sunshinePercent } from './sunshine.js';
 import { convert, prepared, sunshineByDay } from './summaries.js';
 import { isoLocal, localDate } from './time.js';
@@ -23,7 +23,7 @@ export function archiveRows(from, to, fields) {
   const st = prepared(`SELECT ${select.join(', ')} FROM archive WHERE dateTime > ? AND dateTime <= ? ORDER BY dateTime`);
 
   return st.all(from, to).map((raw) => {
-    const r = toDisplay(raw);
+    const r = cleanRow(raw);
     const row = { time: isoLocal(r.dateTime), unix: r.dateTime };
     for (const f of fields) {
       row[f.key] = f.key === 'sunshine'
@@ -113,8 +113,10 @@ function dayBuckets(firstDay, lastDay, end, fields) {
         a.y = r.ysum;
         continue;
       }
-      a.min = convert(f.key, r.min);
-      a.max = convert(f.key, r.max);
+      // Min/Max eines bekannten Fehltags nicht verwenden
+      const excluded = excludedDays(table).includes(r.dateTime);
+      a.min = excluded ? null : convert(f.key, r.min);
+      a.max = excluded ? null : convert(f.key, r.max);
       a.sum = f.key === 'rain' || f.key === 'ET' ? convert(f.key, r.sum) : r.sum;
       a.wsum = r.sumtime ? convert(f.key, r.wsum / r.sumtime) * r.sumtime : 0;
       a.wtime = r.sumtime;

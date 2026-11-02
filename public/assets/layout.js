@@ -2,7 +2,7 @@
 const PAGES = [
   { href: '/', label: 'Aktuell' },
   { href: '/verlauf', label: 'Verlauf' },
-  { href: '/klima', label: 'Klima', soon: true },
+  { href: '/klima', label: 'Klima' },
   { href: '/bodensee', label: 'Bodensee', soon: true },
   { href: '/export', label: 'Export' },
   { href: '/api', label: 'API' },

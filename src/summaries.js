@@ -4,6 +4,7 @@
 import { weewx } from './db.js';
 import { sunshinePercent } from './sunshine.js';
 import { toDisplay } from './units.js';
+import { dayExclusion } from './corrections.js';
 
 const usUnits = weewx.prepare('SELECT usUnits FROM archive ORDER BY dateTime DESC LIMIT 1').get()?.usUnits ?? 1;
 
@@ -20,15 +21,15 @@ export function prepared(sql) {
   return cache.get(sql);
 }
 
-function maxOf(obs, from, to, extra = '') {
+export function maxOf(obs, from, to, extra = '') {
   const r = prepared(`SELECT max, maxtime${extra} FROM archive_day_${obs}
-    WHERE dateTime >= ? AND dateTime <= ? AND max IS NOT NULL ORDER BY max DESC LIMIT 1`).get(from, to);
+    WHERE dateTime >= ? AND dateTime <= ? AND max IS NOT NULL${dayExclusion(obs)} ORDER BY max DESC LIMIT 1`).get(from, to);
   return r ? { value: convert(obs, r.max), time: r.maxtime, ...(extra ? { dir: r.max_dir } : {}) } : null;
 }
 
-function minOf(obs, from, to) {
+export function minOf(obs, from, to) {
   const r = prepared(`SELECT min, mintime FROM archive_day_${obs}
-    WHERE dateTime >= ? AND dateTime <= ? AND min IS NOT NULL ORDER BY min ASC LIMIT 1`).get(from, to);
+    WHERE dateTime >= ? AND dateTime <= ? AND min IS NOT NULL${dayExclusion(obs)} ORDER BY min ASC LIMIT 1`).get(from, to);
   return r ? { value: convert(obs, r.min), time: r.mintime } : null;
 }
 

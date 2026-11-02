@@ -57,6 +57,7 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `schema.js` | Schema von app.db (`CREATE TABLE IF NOT EXISTS`) |
 | `time.js` | Ortszeit Europe/Vienna: `localToUnix`, `localDate`, `isoLocal`, `period()` (Tag/Woche/Monat/Jahr), `addDays` |
 | `units.js` | `toDisplay(row)`: Archiv-Einheiten → °C, hPa, mm, km/h |
+| `corrections.js` | bekannte Messfehler: `cleanRow` (Umrechnung + Fehlwerte = null), `dayExclusion`/`excludedDays` für `archive_day_*` |
 | `fields.js` | Messgrößen der API: Schlüssel, Bezeichnung, Einheit, Kennwerte (`avg/min/max/sum`) |
 | `sunshine.js` | Sonnenschein-Schätzung aus Strahlung (Formel der alten `lib.php`), Cache je Stunde |
 | `astro.js` | `almanac()`, `sunTimes()` |
@@ -64,11 +65,12 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `summaries.js` | `statsDays()` Extremwerte mit Zeitpunkt aus `archive_day_*`; `convert`, `prepared`, `sunshineByDay` |
 | `aggregate.js` | `archiveRows()` (roh), `aggregateRows()` (hour/day/month/year), `columns()` – für API, Export **und** Verlauf |
 | `period.js` | `periodData()` für die Verlaufsseite |
+| `climate.js` | `climate()` Rekorde + Monats-/Jahrestabellen (10 min Cache), `monthReport()` |
 | `lake.js` | Bodensee: `saveLake`, `lakeNow`, `lakeDays`, `lakeChart`, `lakeStats` |
 | `storm.js` | Sturmwarnung: `parseStormPage`, `saveStorm`, `storm` |
 | `jobs.js` | Abrufe alle 15 min (Bodensee) / 5 min (Sturm); nur holen, speichern in lake.js/storm.js |
 | `http.js` | `parseDate`, `parseRange`, `clampInt`, `BadRequest` + Handler (400) |
-| `routes/site.js` | `/api/site/series`, `/period`, `/lake` – auf die eigenen Diagramme zugeschnitten |
+| `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/climate`, `/month-report` – für die eigenen Seiten |
 | `routes/v1.js` | öffentliche API, CSV/JSON-Ausgabe, Rate-Limit |
 
 **Regel:** Jedes Fachmodul besitzt seine Tabellen (Lesen und Schreiben). Neue Abfragen dorthin, nicht in Routen.
@@ -92,6 +94,7 @@ Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain
 |-------|--------|
 | `index.html` + `assets/aktuell.*` | Startseite |
 | `verlauf.html` + `assets/verlauf.*` | Verlauf, URL `?zeitraum=tag|woche|monat|jahr&datum=JJJJ-MM-TT` |
+| `klima.html` + `assets/klima.*` | Rekorde, Monats-/Jahrestabelle mit Kenntagen, Monatsbericht |
 | `export.html` + `assets/export.*` | Export |
 | `api.html` + `assets/apidoc.*` | API-Doku (Feldtabelle live aus `/api/v1/fields`) |
 | `schule/` | Schaufenster-Kiosk, 1920×1080, kein Scrollen, lädt sich alle 6 h neu |
@@ -143,10 +146,13 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 - **Bodensee-Pegel** in cm am Pegel Bregenz (Nullpunkt 392,14 m ü. A.). Hochwasserlinien (HW2–HW100) erscheinen,
   sobald der Pegel bis 50 cm herankommt, plus nächste Stufe (`charts.js` `floodLines`).
 - **Sturmwarnung:** Seite kttg.ch, drei Regionen; gezählt wird Region Ost (Bregenz). 40 = Starkwind, 90 = Sturm.
-- **Messfehler:** Böe 174 km/h am 16.05.2022 07:55 – für Rekorde ausschließen.
+- **Messfehler** stehen in `corrections.js` (z. B. Böe 174 km/h am 16.05.2022 07:55). Neue Fehler dort eintragen;
+  5-min-Werte werden null, Min/Max des Tages zählen nicht. Alle Datensätze daher über `cleanRow` lesen, nie `toDisplay` direkt.
+- **Kenntage** (Klima): Regentag ≥ 1 mm, Frosttag Min < 0 °C, Eistag Max < 0 °C, Sommertag Max ≥ 25 °C,
+  Hitzetag Max ≥ 30 °C, Tropennacht Min ≥ 20 °C. Langjährige Mittel nur aus vollständigen Monaten/Jahren.
 - **Datenstand lokal:** Kopie endet zum Zeitpunkt des Kopierens → Banner „Keine aktuellen Messdaten“ ist dann korrekt.
-- **Vorschau im Claude-Desktop-Browser:** liest `launch.json` des Startprojekts, nicht dieses Projekts.
-  Server dann selbst starten (`npm run dev`) und `http://localhost:8080` öffnen.
+- **Vorschau im Claude-Desktop-Browser:** Server selbst starten (`npm run dev`) und `http://localhost:8080` öffnen
+  (keine `launch.json` im Projekt).
 
 ## Betrieb und Umzug (Plan)
 
@@ -162,7 +168,6 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 
 | Thema | Vorbild alte Seite |
 |-------|--------------------|
-| `/klima` | Übersicht: Rekorde seit 2018, Beobachtungstage, Monatsberichte (NOAA-Text → Tabelle), Monatsmittel, Monatsniederschlag, Regentage |
 | `/bodensee` | eigene Seite mit Jahresvergleich und Hochwasser |
 | `/station` | Hardware, Standort, Geschichte |
 | Livewerte | weewx-mqtt → Mosquitto → Node → Server-Sent Events; Loop-Pakete alle 2,5 s |
