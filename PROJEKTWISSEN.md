@@ -68,9 +68,10 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `climate.js` | `climate()` Rekorde + Monats-/Jahrestabellen (10 min Cache), `monthReport()` |
 | `lake.js` | Bodensee: `saveLake`, `lakeNow`, `lakeDays`, `lakeChart`, `lakeStats`, `lakeYear`, `floodLevels` |
 | `storm.js` | Sturmwarnung: `parseStormPage`, `saveStorm`, `storm` |
+| `station.js` | `stationStatus()`: letzte Messung, Empfang/Batterie 24 h, letzte Abrufe, Korrekturen |
 | `jobs.js` | Abrufe alle 15 min (Bodensee) / 5 min (Sturm); nur holen, speichern in lake.js/storm.js |
 | `http.js` | `parseDate`, `parseRange`, `clampInt`, `BadRequest` + Handler (400) |
-| `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/lake-year`, `/climate`, `/month-report` – für die eigenen Seiten |
+| `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/lake-year`, `/climate`, `/month-report`, `/station` – für die eigenen Seiten |
 | `routes/v1.js` | öffentliche API, CSV/JSON-Ausgabe, Rate-Limit |
 
 **Regel:** Jedes Fachmodul besitzt seine Tabellen (Lesen und Schreiben). Neue Abfragen dorthin, nicht in Routen.
@@ -97,6 +98,7 @@ Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain
 | `bodensee.html` + `assets/bodensee.*` | Bodensee: aktuell, Jahresvergleich (`?jahr=`), historischer Bereich, Hochwasser |
 | `klima.html` + `assets/klima.*` | Rekorde, Monats-/Jahrestabelle mit Kenntagen, Monatsbericht |
 | `export.html` + `assets/export.*` | Export |
+| `station.html` + `assets/station.*` | Station: Zustand (live), Standort, Messgeräte, Technik, Hinweise, Korrekturen |
 | `api.html` + `assets/apidoc.*` | API-Doku (Feldtabelle live aus `/api/v1/fields`) |
 | `schule/` | Schaufenster-Kiosk, 1920×1080, kein Scrollen, lädt sich alle 6 h neu |
 | `assets/format.js` | Zahlen (de-AT, ohne Tausendertrennung), Datum/Zeit in Wien, Symbole, `$`, `dl`, `repeat`, `getJson`, `todayIso`, `addDaysIso` |
@@ -152,6 +154,7 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
   5-min-Werte werden null, Min/Max des Tages zählen nicht. Alle Datensätze daher über `cleanRow` lesen, nie `toDisplay` direkt.
 - **Kenntage** (Klima): Regentag ≥ 1 mm, Frosttag Min < 0 °C, Eistag Max < 0 °C, Sommertag Max ≥ 25 °C,
   Hitzetag Max ≥ 30 °C, Tropennacht Min ≥ 20 °C. Langjährige Mittel nur aus vollständigen Monaten/Jahren.
+- **`inTemp`** ist die Temperatur im Empfänger (Schaufenster), keine Raum- oder Außentemperatur.
 - **Datenstand lokal:** Kopie endet zum Zeitpunkt des Kopierens → Banner „Keine aktuellen Messdaten“ ist dann korrekt.
 - **Vorschau im Claude-Desktop-Browser:** Server selbst starten (`npm run dev`) und `http://localhost:8080` öffnen
   (keine `launch.json` im Projekt).
@@ -170,7 +173,6 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 
 | Thema | Vorbild alte Seite |
 |-------|--------------------|
-| `/station` | Hardware, Standort, Geschichte |
 | Livewerte | weewx-mqtt → Mosquitto → Node → Server-Sent Events; Loop-Pakete alle 2,5 s |
 
 ## Arbeitsweise

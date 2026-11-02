@@ -43,5 +43,5 @@ export function dayExclusion(table) {
 
 /** Liste für die Stationsseite */
 export function correctionList() {
-  return CORRECTIONS.map(({ time, fields, reason }) => ({ time, fields, reason }));
+  return CORRECTIONS.map(({ time, fields, reason }) => ({ time: localToUnix(time), fields, reason }));
 }

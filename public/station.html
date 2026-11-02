@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Station – Wetter BG Blumenstraße Bregenz</title>
+  <meta name="description" content="Die Wetterstation am BG Bregenz Blumenstraße: Sensoren, Standort, Technik, Datengrundlage und aktueller Zustand.">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/station.css">
+  <script src="/assets/station.js" type="module"></script>
+</head>
+<body>
+  <header class="site"></header>
+
+  <main>
+    <h1 class="page-title">Die Station</h1>
+    <p class="lead">Die Wetterstation steht auf dem Dach des BG Bregenz Blumenstraße. Ein Empfänger im Schaufenster
+      darunter nimmt die Funkdaten auf; dort zeigt auch ein Bildschirm die aktuellen Werte.</p>
+
+    <section class="grid cols-2">
+      <div class="card">
+        <h2>Zustand <small id="checked"></small></h2>
+        <table class="values"><tbody id="status"></tbody></table>
+      </div>
+
+      <div class="card">
+        <h2>Standort</h2>
+        <table class="values"><tbody>
+          <tr><td>Ort</td><td class="v">Blumenstraße, 6900 Bregenz</td></tr>
+          <tr><td>Koordinaten</td><td class="v">47,4991° N · 9,7403° O</td></tr>
+          <tr><td>Seehöhe</td><td class="v">434 m ü. A.</td></tr>
+        </tbody></table>
+        <p><a href="https://www.openstreetmap.org/?mlat=47.499074&amp;mlon=9.740264#map=17/47.499074/9.740264">Auf der Karte anzeigen</a></p>
+      </div>
+
+      <div class="card">
+        <h2>Messgeräte</h2>
+        <table class="values"><tbody>
+          <tr><td>Station</td><td class="v">Davis Vantage Pro2 Aktiv Plus</td></tr>
+          <tr><td>Temperatur, Feuchte</td><td class="v">belüftete Strahlungsschutzhütte</td></tr>
+          <tr><td>Wind</td><td class="v">Schalensternanemometer mit Windfahne</td></tr>
+          <tr><td>Niederschlag</td><td class="v">Kippwaage, 0,2 mm je Kippung</td></tr>
+          <tr><td>Strahlung, UV</td><td class="v">Solar- und UV-Sensor</td></tr>
+          <tr><td>Luftdruck</td><td class="v">im Empfänger (Meteostick)</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="card">
+        <h2>Technik</h2>
+        <table class="values"><tbody>
+          <tr><td>Funk</td><td class="v">868 MHz (EU), Sender alle 2,5 s</td></tr>
+          <tr><td>Empfänger</td><td class="v">Meteostick (USB)</td></tr>
+          <tr><td>Datenerfassung</td><td class="v">weewx, Archiv alle 5 Minuten</td></tr>
+          <tr><td>Webseite und API</td><td class="v">eigene Software (Node.js)</td></tr>
+          <tr><td>Weitergabe</td><td class="v"><a href="https://www.wunderground.com/dashboard/pws/IBREGENZ35">Weather Underground IBREGENZ35</a></td></tr>
+        </tbody></table>
+      </div>
+    </section>
+
+    <section class="card notes">
+      <h2>Zu den Daten</h2>
+      <ul>
+        <li>Der <b>reduzierte Luftdruck</b> ist auf Meereshöhe umgerechnet und mit Wetterkarten vergleichbar; der <b>gemessene</b> gilt für 434 m.</li>
+        <li><b>Minimum und Maximum</b> stammen aus den Einzelmessungen alle 2–3 Sekunden, Verläufe und Mittelwerte aus 5-Minuten-Werten.</li>
+        <li>Die <b>Sonnenscheindauer</b> ist aus der Globalstrahlung geschätzt: Liegt die Strahlung über einer von Jahres- und Tageszeit abhängigen Schwelle, zählt die Zeit als sonnig.</li>
+        <li><b>Gefühlte Temperatur:</b> unter etwa 10 °C mit Wind der Windchill, bei Hitze der Hitzeindex.</li>
+        <li>Die <b>Bodensee-Werte</b> stammen vom Pegel Bregenz des Landes Vorarlberg, die <b>Sturmwarnung</b> von der Kantonspolizei Thurgau (Region Ost).</li>
+      </ul>
+      <h3>Korrigierte Messfehler</h3>
+      <p class="hint">Einzelne offensichtlich falsche Werte bleiben im Archiv, werden aber in Anzeige, Statistik und Export ausgeblendet.</p>
+      <table class="values"><tbody id="corrections"></tbody></table>
+    </section>
+  </main>
+
+  <footer class="site"></footer>
+</body>
+</html>

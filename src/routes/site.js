@@ -5,6 +5,7 @@ import { series } from '../weather.js';
 import { periodData } from '../period.js';
 import { lakeChart, lakeYear } from '../lake.js';
 import { climate, monthReport } from '../climate.js';
+import { stationStatus } from '../station.js';
 import { addDays } from '../time.js';
 import { parseDate, today, clampInt, badRequestHandler } from '../http.js';
 
@@ -41,6 +42,10 @@ site.get('/lake', (req, res) => {
 
 site.get('/lake-year', (req, res) => {
   res.json(lakeYear(clampInt(req.query.year, Number(today().slice(0, 4)), 1900, 2100)));
+});
+
+site.get('/station', (req, res) => {
+  res.json(stationStatus());
 });
 
 site.use(badRequestHandler);

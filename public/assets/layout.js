@@ -6,7 +6,7 @@ const PAGES = [
   { href: '/bodensee', label: 'Bodensee' },
   { href: '/export', label: 'Export' },
   { href: '/api', label: 'API' },
-  { href: '/station', label: 'Station', soon: true },
+  { href: '/station', label: 'Station' },
 ];
 
 export function renderLayout() {

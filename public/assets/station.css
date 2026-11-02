@@ -1,0 +1,10 @@
+/* Stationsseite */
+.notes { margin-top: var(--gap); }
+.notes ul { margin: 0; padding-left: 1.2em; max-width: 80ch; }
+.notes li { margin: 6px 0; }
+.notes h3 { margin: 18px 0 4px; font-size: 0.95rem; }
+/* Hier stehen Texte statt Zahlen in der Wertespalte – umbrechen erlaubt */
+table.values td.v { white-space: normal; }
+table.values td.t { width: auto; }
+.ok { color: #2f9e44; }
+.warn { color: var(--danger); }

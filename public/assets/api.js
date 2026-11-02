@@ -5,6 +5,7 @@ export const API = {
   lake: (days = 28) => `/api/site/lake?days=${days}`,
   period: (range, date) => `/api/site/period?range=${range}&date=${date}`,
   climate: '/api/site/climate',
+  station: '/api/site/station',
   lakeYear: (year) => `/api/site/lake-year?year=${year}`,
   monthReport: (month) => `/api/site/month-report?month=${month}`,
 
