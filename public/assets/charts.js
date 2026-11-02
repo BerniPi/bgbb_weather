@@ -1,5 +1,8 @@
 // Diagramme (Chart.js, global `Chart`) für Startseite, Verlauf und Schaufenster
-import { hm, num, dayFmt, timeFmt } from './format.js';
+import { hm, num, dayFmt, timeFmt, dt } from './format.js';
+
+const weekdayFmt = new Intl.DateTimeFormat('de-AT', { timeZone: 'Europe/Vienna', weekday: 'short', day: '2-digit', month: '2-digit' });
+const monthFmt = new Intl.DateTimeFormat('de-AT', { timeZone: 'UTC', month: 'short' });
 
 export const COLORS = {
   temp: '#e8590c', dew: '#1c7ed6', rain: '#1c7ed6', wind: '#2f9e44', gust: '#94d82d',
@@ -25,14 +28,16 @@ export function setupCharts(fontSize) {
 
 const gridColor = () => css('--chart-grid') || '#eef1f4';
 
-/** Zeitachse mit Strichen zu vollen Ortsstunden (alle stepHours) ohne Datums-Adapter */
+/** Zeitachse mit Strichen zu vollen Ortsstunden (alle stepHours) ohne Datums-Adapter;
+ *  ab 24 h Schrittweite mit Wochentag beschriftet */
 export function timeAxis(min, max, stepHours = 3) {
+  const label = stepHours >= 24 ? (v) => weekdayFmt.format(v) : (v) => hm(v / 1000);
   return {
     type: 'linear',
     min,
     max,
     grid: { color: gridColor() },
-    ticks: { callback: (v) => hm(v / 1000), maxRotation: 0, autoSkip: false },
+    ticks: { callback: label, maxRotation: 0, autoSkip: false },
     afterBuildTicks(axis) {
       const ticks = [];
       for (let t = Math.ceil(axis.min / 3600000) * 3600000; t <= axis.max; t += 3600000) {
@@ -60,16 +65,37 @@ export function dayAxis(min, max, stepDays = 7) {
   };
 }
 
+/** Monatsachse: Striche jeweils am Monatsersten (Datenpunkte um 12 Uhr UTC) */
+export function monthAxis(min, max) {
+  return {
+    type: 'linear',
+    min,
+    max,
+    grid: { color: gridColor() },
+    ticks: { callback: (v) => monthFmt.format(v), maxRotation: 0, autoSkip: false },
+    afterBuildTicks(axis) {
+      const ticks = [];
+      const d = new Date(axis.min);
+      for (let m = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 12); m <= axis.max;) {
+        if (m >= axis.min) ticks.push({ value: m });
+        const n = new Date(m);
+        m = Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1, 12);
+      }
+      axis.ticks = ticks;
+    },
+  };
+}
+
 const yAxis = (extra = {}) => ({ grid: { color: gridColor() }, ...extra });
 const xy = (records, key) => records.map((r) => ({ x: r.t * 1000, y: r[key] }));
 const line = (data, color, extra = {}) => ({
   data, borderColor: color, backgroundColor: color, spanGaps: 15 * 60 * 1000, ...extra,
 });
 
-function tooltip(unit, digits = 1) {
+function tooltip(unit, digits = 1, withDate = false) {
   return {
     callbacks: {
-      title: (items) => hm(items[0].parsed.x / 1000),
+      title: (items) => (withDate ? dt : hm)(items[0].parsed.x / 1000),
       label: (item) => `${item.dataset.label ?? ''}: ${num(item.parsed.y, digits)} ${unit}`,
     },
   };
@@ -85,11 +111,13 @@ function draw(id, config) {
 /**
  * Verlaufsdiagramme aus /api/series. ids: { temp, rain, wind, dir, baro, hum, rad }
  * tooltips: Tooltips anzeigen (Homepage ja, Schaufenster nein)
+ * stepHours: Achsenstriche (3 = Tag, 24 = Woche)
  */
-export function renderSeries(ids, { records, rainHourly }, { tooltips = true } = {}) {
+export function renderSeries(ids, { records, rainHourly }, { tooltips = true, stepHours = 3 } = {}) {
   if (!records.length) return;
-  const x = timeAxis(records[0].t * 1000, records.at(-1).t * 1000);
-  const tip = (unit, d) => (tooltips ? tooltip(unit, d) : { enabled: false });
+  const x = timeAxis(records[0].t * 1000, records.at(-1).t * 1000, stepHours);
+  const withDate = stepHours >= 24;
+  const tip = (unit, d) => (tooltips ? tooltip(unit, d, withDate) : { enabled: false });
 
   draw(ids.temp, { type: 'line', data: { datasets: [
     line(xy(records, 'outTemp'), COLORS.temp, { label: 'Temperatur' }),
@@ -103,7 +131,7 @@ export function renderSeries(ids, { records, rainHourly }, { tooltips = true } =
   }] }, options: {
     scales: { x: { ...x, min: rainHourly[0].t * 1000, max: (rainHourly.at(-1).t + 3600) * 1000 }, y: yAxis({ min: 0, suggestedMax: 2 }) },
     plugins: { tooltip: tooltips ? { callbacks: {
-      title: (items) => `ab ${hm(items[0].parsed.x / 1000 - 1800)}`,
+      title: (items) => `ab ${(withDate ? dt : hm)(items[0].parsed.x / 1000 - 1800)}`,
       label: (item) => `${num(item.parsed.y)} mm`,
     } } : { enabled: false } },
   } });
@@ -195,4 +223,82 @@ export function renderLake(id, { days, flood }, { tooltips = true } = {}) {
       },
     } : { enabled: false } },
   } });
+}
+
+// --- Tageswerte (Monat, Jahr) ---------------------------------------------------
+
+const dayX = (d) => (d.day + 43200) * 1000;
+const dxy = (days, key) => days.map((d) => ({ x: dayX(d), y: d[key] }));
+const band = (color) => `${color}33`;
+
+function dailyTooltip(unit, digits = 1) {
+  return {
+    callbacks: {
+      title: (items) => dayFmt.format(items[0].parsed.x),
+      label: (item) => `${item.dataset.label}: ${num(item.parsed.y, digits)} ${unit}`,
+    },
+  };
+}
+
+/**
+ * Diagramme aus Tageswerten (/api/period, daily). ids: { temp, rain, wind, baro, hum, sun }
+ * Min/Max als Band, Mittel als Linie.
+ */
+export function renderDaily(ids, days) {
+  if (!days.length) return;
+  const min = dayX(days[0]);
+  const max = dayX(days.at(-1));
+  const x = days.length > 62 ? monthAxis(min, max) : dayAxis(min, max, 7);
+  const daily = { spanGaps: 2 * 86400 * 1000, pointRadius: days.length > 62 ? 0 : 2 };
+  const bandPair = (keyMin, keyMax, color, label) => [
+    line(dxy(days, keyMax), band(color), { ...daily, label: `${label} max`, borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: band(color) }),
+    line(dxy(days, keyMin), band(color), { ...daily, label: `${label} min`, borderWidth: 0, pointRadius: 0 }),
+  ];
+
+  draw(ids.temp, { type: 'line', data: { datasets: [
+    line(dxy(days, 'tmax'), COLORS.temp, { ...daily, label: 'Max', borderWidth: 1.5 }),
+    line(dxy(days, 'tavg'), COLORS.baro, { ...daily, label: 'Mittel', borderWidth: 1.5 }),
+    line(dxy(days, 'tmin'), COLORS.dew, { ...daily, label: 'Min', borderWidth: 1.5 }),
+  ] }, options: { scales: { x, y: yAxis() }, plugins: { tooltip: dailyTooltip('°C') } } });
+
+  let total = 0;
+  const cumulative = days.map((d) => ({ x: dayX(d), y: (total += d.rain ?? 0) }));
+  draw(ids.rain, { data: { datasets: [
+    { type: 'bar', label: 'Tagessumme', data: dxy(days, 'rain'), backgroundColor: COLORS.rain, barPercentage: 1, categoryPercentage: 0.85, yAxisID: 'y' },
+    { type: 'line', label: 'Summe', data: cumulative, borderColor: COLORS.baro, borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' },
+  ] }, options: { scales: {
+    x: { ...x, offset: false },
+    y: yAxis({ min: 0, suggestedMax: 5, title: { display: true, text: 'je Tag' } }),
+    y1: yAxis({ min: 0, position: 'right', grid: { display: false }, title: { display: true, text: 'Summe' } }),
+  }, plugins: { tooltip: dailyTooltip('mm') } } });
+
+  draw(ids.wind, { type: 'line', data: { datasets: [
+    line(dxy(days, 'gust'), COLORS.gust, { ...daily, label: 'Stärkste Böe', borderWidth: 1.5 }),
+    line(dxy(days, 'wavg'), COLORS.wind, { ...daily, label: 'Mittel' }),
+  ] }, options: { scales: { x, y: yAxis({ min: 0 }) }, plugins: { tooltip: dailyTooltip('km/h') } } });
+
+  draw(ids.baro, { type: 'line', data: { datasets: [
+    ...bandPair('pmin', 'pmax', COLORS.baro, 'Luftdruck'),
+    line(dxy(days, 'pavg'), COLORS.baro, { ...daily, label: 'Mittel' }),
+  ] }, options: { scales: { x, y: yAxis({ ticks: { callback: (v) => num(v, 0) } }) }, plugins: { tooltip: dailyTooltip('hPa') } } });
+
+  draw(ids.hum, { type: 'line', data: { datasets: [
+    ...bandPair('hmin', 'hmax', COLORS.hum, 'Feuchte'),
+    line(dxy(days, 'havg'), COLORS.hum, { ...daily, label: 'Mittel' }),
+  ] }, options: { scales: { x, y: yAxis({ max: 100 }) }, plugins: { tooltip: dailyTooltip('%', 0) } } });
+
+  draw(ids.sun, { data: { datasets: [
+    { type: 'bar', label: 'Sonnenschein', data: dxy(days, 'sunshine'), backgroundColor: COLORS.sun, barPercentage: 1, categoryPercentage: 0.85, yAxisID: 'y' },
+    { type: 'line', label: 'Max. Strahlung', data: dxy(days, 'radmax'), borderColor: COLORS.rad, borderWidth: 1.5, pointRadius: 0, yAxisID: 'y1' },
+  ] }, options: { scales: {
+    x: { ...x, offset: false },
+    y: yAxis({ min: 0, title: { display: true, text: 'h' } }),
+    y1: yAxis({ min: 0, position: 'right', grid: { display: false }, title: { display: true, text: 'W/m²' } }),
+  }, plugins: { tooltip: dailyTooltip('', 1) } } });
+}
+
+/** Diagramm entfernen (z. B. beim Wechsel zwischen Tages- und Monatsansicht) */
+export function clearChart(id) {
+  charts.get(id)?.destroy();
+  charts.delete(id);
 }

@@ -1,7 +1,7 @@
 // Kopf- und Fußzeile für alle Seiten der Homepage
 const PAGES = [
   { href: '/', label: 'Aktuell' },
-  { href: '/verlauf', label: 'Verlauf', soon: true },
+  { href: '/verlauf', label: 'Verlauf' },
   { href: '/klima', label: 'Klima', soon: true },
   { href: '/bodensee', label: 'Bodensee', soon: true },
   { href: '/export', label: 'Export', soon: true },

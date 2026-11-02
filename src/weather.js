@@ -2,9 +2,9 @@
 // Ausgabe immer in Anzeigeeinheiten (°C, hPa, mm, km/h), siehe units.js.
 import { weewx, app, getStatus } from './db.js';
 import { sunshinePercent, isSunny } from './sunshine.js';
-import { localDate, startOfLocalDay, localToUnix } from './time.js';
+import { localDate, startOfLocalDay, localToUnix, period, addDays } from './time.js';
 import { toDisplay } from './units.js';
-import { statsDays } from './summaries.js';
+import { statsDays, dailyValues } from './summaries.js';
 
 const COLS = `dateTime, usUnits, interval, outTemp, dewpoint, outHumidity, windchill, heatindex,
   barometer, pressure, windSpeed, windGust, windDir, windGustDir, rainRate, rain, radiation, UV`;
@@ -124,8 +124,14 @@ export function current() {
 export function series(hours = 24) {
   const last = qLatest();
   if (!last) return { records: [], rainHourly: [] };
-  const now = last.dateTime;
-  const rows = qRange(now - hours * 3600, now);
+  return seriesRange(last.dateTime - hours * 3600, last.dateTime);
+}
+
+/** 5-Minuten-Verlauf im Zeitraum (from, to] plus Regensummen je Stunde */
+export function seriesRange(from, to) {
+  const rows = qRange(from, to);
+  const hours = Math.ceil((to - from) / 3600);
+  const now = to;
 
   const records = rows.map((r) => ({
     t: r.dateTime,
@@ -190,4 +196,49 @@ export function lakeSeries(days = 28) {
 
 export function storm() {
   return getStatus('sturm');
+}
+
+// --- Verlauf: Kalenderzeiträume ----------------------------------------------
+
+const qSeeDaysRange = app.prepare(`SELECT d.date, d.temp05, d.stand, h.stand_mit
+  FROM see_days d LEFT JOIN see_hist h ON h.day = substr(d.date, 6)
+  WHERE d.date >= ? AND d.date <= ? ORDER BY d.date`);
+const stFirst = weewx.prepare('SELECT MIN(dateTime) AS t FROM archive');
+
+function lakeStats(days) {
+  const pick = (key, better) => days.reduce((b, d) => (d[key] != null && (b == null || better(d[key], b[key])) ? d : b), null);
+  const e = (d, key) => (d ? { value: d[key], date: d.date } : null);
+  return {
+    temp05Min: e(pick('temp05', (a, b) => a < b), 'temp05'),
+    temp05Max: e(pick('temp05', (a, b) => a > b), 'temp05'),
+    standMin: e(pick('stand', (a, b) => a < b), 'stand'),
+    standMax: e(pick('stand', (a, b) => a > b), 'stand'),
+  };
+}
+
+/** Daten für die Verlaufsseite: range = day|week|month|year, iso = Datum im Zeitraum */
+export function periodData(range, iso) {
+  const p = period(range, iso);
+  const latest = stLatest.get()?.dateTime ?? 0;
+  const until = Math.min(p.end, latest);
+  const base = {
+    period: p,
+    firstData: localDate(stFirst.get().t),
+    lastData: localDate(latest),
+  };
+  if (p.firstDay > latest) return { ...base, stats: null };
+
+  const periodDays = qSeeDaysRange.all(p.first, p.last);
+  const chartFrom = range === 'day' || range === 'week' ? addDays(p.last, -27) : p.first;
+  return {
+    ...base,
+    stats: statsDays(p.firstDay, p.lastDay, until),
+    series: range === 'day' || range === 'week' ? seriesRange(p.firstDay, until) : null,
+    daily: range === 'month' || range === 'year' ? dailyValues(p.firstDay, p.lastDay, until) : null,
+    lake: {
+      stats: lakeStats(periodDays),
+      days: qSeeDaysRange.all(chartFrom, p.last),
+      flood: getStatus('see')?.flood ?? FLOOD_DEFAULT,
+    },
+  };
 }

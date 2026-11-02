@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verlauf – Wetter BG Blumenstraße Bregenz</title>
+  <meta name="description" content="Wetterdaten der Station BG Blumenstraße für jeden Tag, jede Woche, jeden Monat und jedes Jahr seit 2018.">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/verlauf.css">
+  <script src="/vendor/chart.js/chart.umd.js" defer></script>
+  <script src="/assets/verlauf.js" type="module"></script>
+</head>
+<body>
+  <header class="site"></header>
+
+  <main>
+    <section class="card period-bar">
+      <div class="tabs" role="tablist" aria-label="Zeitraum">
+        <button role="tab" data-range="day">Tag</button>
+        <button role="tab" data-range="week">Woche</button>
+        <button role="tab" data-range="month">Monat</button>
+        <button role="tab" data-range="year">Jahr</button>
+      </div>
+      <div class="pager">
+        <button id="prev" aria-label="Zurück">‹</button>
+        <h1 id="title">–</h1>
+        <button id="next" aria-label="Weiter">›</button>
+      </div>
+      <div class="pick">
+        <input type="date" id="date" aria-label="Datum wählen">
+        <button id="today">Heute</button>
+      </div>
+    </section>
+
+    <p id="empty" class="card empty" hidden>Für diesen Zeitraum gibt es keine Messdaten. Aufzeichnung ab <span id="firstData"></span>.</p>
+
+    <div id="content">
+      <section class="grid cols-3 overview">
+        <div class="card stats-card">
+          <h2>Statistik <small id="statsNote"></small></h2>
+          <table class="values"><tbody id="stats"></tbody></table>
+        </div>
+        <div class="card">
+          <h2>Auf einen Blick</h2>
+          <div class="tiles" id="tiles"></div>
+        </div>
+        <div class="card">
+          <h2>Bodensee</h2>
+          <table class="values"><tbody id="lake"></tbody></table>
+        </div>
+      </section>
+
+      <section id="intraday" class="grid cols-2 charts">
+        <figure class="card chart"><h3>Temperatur <span>°C</span></h3><div class="canvas"><canvas id="cTemp"></canvas></div>
+          <div class="legend"><span><i style="background:#e8590c"></i>Temperatur</span><span><i style="background:#1c7ed6"></i>Taupunkt</span></div></figure>
+        <figure class="card chart"><h3>Niederschlag je Stunde <span>mm</span></h3><div class="canvas"><canvas id="cRain"></canvas></div></figure>
+        <figure class="card chart"><h3>Wind <span>km/h</span></h3><div class="canvas"><canvas id="cWind"></canvas></div>
+          <div class="legend"><span><i style="background:#2f9e44"></i>Mittel</span><span><i style="background:#94d82d"></i>Böen</span></div></figure>
+        <figure class="card chart"><h3>Windrichtung</h3><div class="canvas"><canvas id="cDir"></canvas></div></figure>
+        <figure class="card chart"><h3>Luftdruck (Meereshöhe) <span>hPa</span></h3><div class="canvas"><canvas id="cBaro"></canvas></div></figure>
+        <figure class="card chart"><h3>Luftfeuchtigkeit <span>%</span></h3><div class="canvas"><canvas id="cHum"></canvas></div></figure>
+        <figure class="card chart"><h3>Sonnenstrahlung <span>W/m²</span></h3><div class="canvas"><canvas id="cRad"></canvas></div>
+          <div class="legend"><span><i style="background:#f59f00"></i>Strahlung</span><span><i style="background:#ffd43b;height:6px"></i>Sonnenschein</span></div></figure>
+        <figure class="card chart lake-chart"><h3>Bodensee – 4 Wochen <span>°C / cm</span></h3><div class="canvas"><canvas id="cLake"></canvas></div>
+          <div class="legend"><span><i style="background:#1c7ed6"></i>Wassertemperatur</span><span><i style="background:#1864ab"></i>Pegel</span><span><i style="background:#adb5bd"></i>Pegel langj. Mittel</span></div></figure>
+      </section>
+
+      <section id="daily" class="grid cols-2 charts" hidden>
+        <figure class="card chart"><h3>Temperatur je Tag <span>°C</span></h3><div class="canvas"><canvas id="dTemp"></canvas></div>
+          <div class="legend"><span><i style="background:#e8590c"></i>Max</span><span><i style="background:#868e96"></i>Mittel</span><span><i style="background:#1c7ed6"></i>Min</span></div></figure>
+        <figure class="card chart"><h3>Niederschlag <span>mm</span></h3><div class="canvas"><canvas id="dRain"></canvas></div>
+          <div class="legend"><span><i style="background:#1c7ed6"></i>je Tag</span><span><i style="background:#868e96"></i>Summe im Zeitraum</span></div></figure>
+        <figure class="card chart"><h3>Wind <span>km/h</span></h3><div class="canvas"><canvas id="dWind"></canvas></div>
+          <div class="legend"><span><i style="background:#2f9e44"></i>Tagesmittel</span><span><i style="background:#94d82d"></i>stärkste Böe</span></div></figure>
+        <figure class="card chart"><h3>Sonnenschein <span>h / W/m²</span></h3><div class="canvas"><canvas id="dSun"></canvas></div>
+          <div class="legend"><span><i style="background:#ffd43b;height:6px"></i>Sonnenstunden</span><span><i style="background:#f59f00"></i>max. Strahlung</span></div></figure>
+        <figure class="card chart"><h3>Luftdruck (Meereshöhe) <span>hPa</span></h3><div class="canvas"><canvas id="dBaro"></canvas></div>
+          <div class="legend"><span><i style="background:#868e96"></i>Mittel</span><span><i style="background:#868e9655;height:8px"></i>Min–Max</span></div></figure>
+        <figure class="card chart"><h3>Luftfeuchtigkeit <span>%</span></h3><div class="canvas"><canvas id="dHum"></canvas></div>
+          <div class="legend"><span><i style="background:#0c8599"></i>Mittel</span><span><i style="background:#0c859955;height:8px"></i>Min–Max</span></div></figure>
+        <figure class="card chart wide"><h3>Bodensee <span>°C / cm</span></h3><div class="canvas"><canvas id="dLake"></canvas></div>
+          <div class="legend"><span><i style="background:#1c7ed6"></i>Wassertemperatur</span><span><i style="background:#1864ab"></i>Pegel</span><span><i style="background:#adb5bd"></i>Pegel langj. Mittel</span></div></figure>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site"></footer>
+</body>
+</html>

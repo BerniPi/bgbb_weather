@@ -47,3 +47,49 @@ export function localTime(unix) {
 export function startOfLocalDay(unix) {
   return localToUnix(localDate(unix));
 }
+
+// Kalenderrechnung auf 'YYYY-MM-DD' (über UTC, damit Sommerzeit keine Rolle spielt)
+const isoOf = (d) => d.toISOString().slice(0, 10);
+const utcOf = (iso) => new Date(`${iso}T00:00:00Z`);
+
+/** 'YYYY-MM-DD' plus n Tage */
+export function addDays(iso, n) {
+  const d = utcOf(iso);
+  d.setUTCDate(d.getUTCDate() + n);
+  return isoOf(d);
+}
+
+/**
+ * Kalenderzeitraum, der das Datum enthält.
+ * range: 'day' | 'week' (Mo–So) | 'month' | 'year'
+ * Ergebnis: erster und letzter Tag (ISO) sowie deren Tagesbeginn als Unix-Zeit
+ * und das Ende (exklusiv) – plus Datum im vorigen und nächsten Zeitraum.
+ */
+export function period(range, iso) {
+  const d = utcOf(iso);
+  let first;
+  let last;
+  if (range === 'week') {
+    first = addDays(iso, -((d.getUTCDay() + 6) % 7));
+    last = addDays(first, 6);
+  } else if (range === 'month') {
+    first = `${iso.slice(0, 7)}-01`;
+    last = isoOf(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)));
+  } else if (range === 'year') {
+    first = `${iso.slice(0, 4)}-01-01`;
+    last = `${iso.slice(0, 4)}-12-31`;
+  } else {
+    first = iso;
+    last = iso;
+  }
+  return {
+    range,
+    first,
+    last,
+    firstDay: localToUnix(first),
+    lastDay: localToUnix(last),
+    end: localToUnix(addDays(last, 1)),
+    prev: addDays(first, -1),
+    next: addDays(last, 1),
+  };
+}

@@ -1,7 +1,8 @@
 import express from 'express';
 import { resolve } from 'node:path';
 import { config, ROOT } from './config.js';
-import { current, series, lake, lakeSeries, storm } from './weather.js';
+import { current, series, lake, lakeSeries, storm, periodData } from './weather.js';
+import { localDate } from './time.js';
 import { almanac } from './astro.js';
 import { startJobs } from './jobs.js';
 
@@ -21,6 +22,15 @@ api.get('/current', (req, res) => {
 api.get('/series', (req, res) => {
   const hours = Math.min(Math.max(Number(req.query.hours) || 24, 1), 24 * 7);
   res.json(series(hours));
+});
+
+const RANGES = new Set(['day', 'week', 'month', 'year']);
+api.get('/period', (req, res) => {
+  const range = RANGES.has(req.query.range) ? req.query.range : 'day';
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date ?? '') && !Number.isNaN(Date.parse(req.query.date))
+    ? req.query.date
+    : localDate(Math.floor(Date.now() / 1000));
+  res.json(periodData(range, date));
 });
 
 api.get('/lake', (req, res) => {

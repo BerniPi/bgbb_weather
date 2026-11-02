@@ -2,35 +2,12 @@
 import { $, num, signed, hm, dt, day, longDate, relative, compass, weatherIcon, dl, repeat, getJson } from './format.js';
 import { setupCharts, renderSeries, renderLake } from './charts.js';
 import { renderLayout } from './layout.js';
+import { row, statRows } from './stats.js';
 
-const STALE_AFTER = 15 * 60;
-
-const row = (label, value, time = '') => `<tr><td>${label}</td><td class="v">${value}</td><td class="t">${time}</td></tr>`;
 const at = (e) => (e ? hm(e.time) : '');
 const v = (e, d = 1) => num(e?.value, d);
 const dir = (deg) => (deg == null ? '' : ` <span class="t">${compass(deg)}</span>`);
-
-/** Extremwerte eines Tages (heute, vor einem Jahr) als Tabellenzeilen */
-function statRows(s) {
-  if (!s) return row('keine Daten', '');
-  return [
-    row('Max. Temperatur', `${v(s.outTempMax)} °C`, at(s.outTempMax)),
-    row('Min. Temperatur', `${v(s.outTempMin)} °C`, at(s.outTempMin)),
-    row('Mittlere Temperatur', `${num(s.outTempAvg)} °C`),
-    row('Max. Hitzeindex', `${v(s.heatindexMax)} °C`, at(s.heatindexMax)),
-    row('Min. Windchill', `${v(s.windchillMin)} °C`, at(s.windchillMin)),
-    row('Taupunkt max / min', `${v(s.dewpointMax)} / ${v(s.dewpointMin)} °C`),
-    row('Luftfeuchte max / min', `${v(s.outHumidityMax, 0)} / ${v(s.outHumidityMin, 0)} %`),
-    row('Luftdruck max / min', `${v(s.barometerMax)} / ${v(s.barometerMin)} hPa`),
-    row('Niederschlag', `${num(s.rain)} mm`),
-    row('Max. Niederschlagsrate', `${v(s.rainRateMax)} mm/h`, s.rainRateMax?.value > 0 ? at(s.rainRateMax) : ''),
-    row('Max. Wind', `${v(s.windSpeedMax)} km/h${dir(s.windSpeedMax?.dir)}`, at(s.windSpeedMax)),
-    row('Stärkste Böe', `${v(s.windGustMax)} km/h${dir(s.windGustMax?.dir)}`, at(s.windGustMax)),
-    row('Max. UV-Index', v(s.UVMax), s.UVMax?.value > 0 ? at(s.UVMax) : ''),
-    row('Max. Strahlung', `${v(s.radiationMax, 0)} W/m²`, s.radiationMax?.value > 0 ? at(s.radiationMax) : ''),
-    row('Sonnenscheindauer', `${num(s.sunshineMinutes / 60)} h`),
-  ].join('');
-}
+const STALE_AFTER = 15 * 60;
 
 function renderWeather(w) {
   const t = w.today ?? {};
