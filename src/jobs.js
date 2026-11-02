@@ -19,6 +19,11 @@ const insSeeHist = app.prepare('INSERT OR REPLACE INTO see_hist VALUES (?, ?, ?,
 
 export async function updateLake() {
   const [see] = JSON.parse(await fetchText(SEE_URL));
+  // Hochwasser-Kennwerte (Pegel in cm) für die Linien im Diagramm
+  const flood = Object.fromEntries(['hW2', 'hW10', 'hW20', 'hW30', 'hW50', 'hW100']
+    .filter((k) => see[k] != null).map((k) => [`HW${k.slice(2)}`, see[k]]));
+  setStatus('see', { flood, nnw: see.nnw, hhw: see.hhw });
+
   const t = Math.floor(Date.parse(see.wasserstand.datum) / 1000);
   insSeeData.run(t, see.wtMilli05?.wert ?? null, see.wtMilli25?.wert ?? null, see.wasserstand.wert);
   for (const d of see.seeArchiv ?? []) {

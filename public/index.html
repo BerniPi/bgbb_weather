@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wetter BG Blumenstraße Bregenz</title>
+  <meta name="description" content="Aktuelle Wetterdaten der Wetterstation am BG Bregenz Blumenstraße: Temperatur, Wind, Niederschlag, Luftdruck, Bodensee und Astronomie.">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/aktuell.css">
+  <script src="/vendor/chart.js/chart.umd.js" defer></script>
+  <script src="/assets/aktuell.js" type="module"></script>
+</head>
+<body>
+  <header class="site"></header>
+
+  <main>
+    <div id="storm" class="banner" hidden></div>
+    <div id="stale" class="banner stale" hidden></div>
+
+    <section class="grid cols-3 top">
+      <div class="card hero">
+        <h2>Aktuell <small id="dataTime">–</small></h2>
+        <div class="hero-main">
+          <span id="icon" class="icon"></span>
+          <div>
+            <div class="temp"><span id="outTemp">–</span><small>°C</small></div>
+            <div id="feels" class="feels"></div>
+          </div>
+        </div>
+        <div class="hero-range">
+          <span>Max <b class="up" id="tMax">–</b> <i id="tMaxT"></i></span>
+          <span>Min <b class="down" id="tMin">–</b> <i id="tMinT"></i></span>
+        </div>
+        <div class="hero-tiles">
+          <div><span>Wind</span><b id="hWind">–</b></div>
+          <div><span>Feuchte</span><b id="hHum">–</b></div>
+          <div><span>Luftdruck</span><b id="hBaro">–</b></div>
+          <div><span>Regen heute</span><b id="hRain">–</b></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Bodensee <small id="lakeTime"></small></h2>
+        <table class="values"><tbody id="lake"></tbody></table>
+        <p class="hint">Änderung seit gestern in Klammer · Pegel Bregenz, historisch 1864–2024</p>
+      </div>
+
+      <div class="card">
+        <h2>Sonne &amp; Mond</h2>
+        <div class="astro">
+          <div><h3>Sonne</h3><dl class="kv" id="sun"></dl></div>
+          <div><h3>Mond</h3><dl class="kv" id="moon"></dl></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid cols-3 stats">
+      <div class="card">
+        <h2>Messwerte</h2>
+        <table class="values"><tbody id="now"></tbody></table>
+      </div>
+      <div class="card">
+        <h2>Heute</h2>
+        <table class="values"><tbody id="today"></tbody></table>
+      </div>
+      <div class="card">
+        <h2>Vor einem Jahr <small id="lyDate"></small></h2>
+        <table class="values"><tbody id="lastYear"></tbody></table>
+      </div>
+    </section>
+
+    <h2 class="section-title">Letzte 24 Stunden</h2>
+    <section class="grid cols-2 charts">
+      <figure class="card chart"><h3>Temperatur <span>°C</span></h3><div class="canvas"><canvas id="cTemp"></canvas></div>
+        <div class="legend"><span><i style="background:#e8590c"></i>Temperatur</span><span><i style="background:#1c7ed6"></i>Taupunkt</span></div></figure>
+      <figure class="card chart"><h3>Niederschlag je Stunde <span>mm</span></h3><div class="canvas"><canvas id="cRain"></canvas></div></figure>
+      <figure class="card chart"><h3>Wind <span>km/h</span></h3><div class="canvas"><canvas id="cWind"></canvas></div>
+        <div class="legend"><span><i style="background:#2f9e44"></i>Mittel</span><span><i style="background:#94d82d"></i>Böen</span></div></figure>
+      <figure class="card chart"><h3>Windrichtung</h3><div class="canvas"><canvas id="cDir"></canvas></div></figure>
+      <figure class="card chart"><h3>Luftdruck (Meereshöhe) <span>hPa</span></h3><div class="canvas"><canvas id="cBaro"></canvas></div></figure>
+      <figure class="card chart"><h3>Luftfeuchtigkeit <span>%</span></h3><div class="canvas"><canvas id="cHum"></canvas></div></figure>
+      <figure class="card chart"><h3>Sonnenstrahlung <span>W/m²</span></h3><div class="canvas"><canvas id="cRad"></canvas></div>
+        <div class="legend"><span><i style="background:#f59f00"></i>Strahlung</span><span><i style="background:#ffd43b;height:6px"></i>Sonnenschein</span></div></figure>
+      <figure class="card chart"><h3>Bodensee – 4 Wochen <span>°C / cm</span></h3><div class="canvas"><canvas id="cLake"></canvas></div>
+        <div class="legend"><span><i style="background:#1c7ed6"></i>Wassertemperatur</span><span><i style="background:#1864ab"></i>Pegel</span><span><i style="background:#adb5bd"></i>Pegel langj. Mittel</span></div></figure>
+    </section>
+  </main>
+
+  <footer class="site"></footer>
+</body>
+</html>
