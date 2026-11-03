@@ -8,6 +8,7 @@ export const API = {
   station: '/api/site/station',
   lakeYear: (year) => `/api/site/lake-year?year=${year}`,
   monthReport: (month) => `/api/site/month-report?month=${month}`,
+  days: (from, to) => `/api/site/days?from=${from}&to=${to}`,
 
   // öffentliche API
   current: '/api/v1/current',

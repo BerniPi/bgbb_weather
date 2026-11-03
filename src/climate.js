@@ -4,6 +4,7 @@ import { aggregateRows } from './aggregate.js';
 import { FIELD_MAP } from './fields.js';
 import { archiveSpan } from './weather.js';
 import { dayExclusion } from './corrections.js';
+import { dayValues, countTypes, dayTypeInfo } from './daytypes.js';
 import { localDate, localToUnix, addDays, period } from './time.js';
 
 const ALL = [0, 4102444800]; // ganzer Datenbestand (bis 2100)
@@ -20,7 +21,7 @@ function dailyExtreme(obs, expr, order) {
 
 function records(daily) {
   const at = (e) => (e ? { value: e.value, time: e.time } : null);
-  const sunniest = daily.reduce((b, d) => (d.sunshine_sum > (b?.sunshine_sum ?? -1) ? d : b), null);
+  const sunniest = daily.reduce((b, d) => (d.sunshine > (b?.sunshine ?? -1) ? d : b), null);
   return [
     { title: 'Temperatur', unit: '°C', items: [
       ['Höchste', at(maxOf('outTemp', ...ALL))],
@@ -52,7 +53,7 @@ function records(daily) {
     { title: 'Sonne', unit: '', items: [
       ['Höchste Strahlung', at(maxOf('radiation', ...ALL)), 'W/m²'],
       ['Höchster UV-Index', at(maxOf('UV', ...ALL)), ''],
-      ['Sonnigster Tag', sunniest ? { value: sunniest.sunshine_sum / 60, date: sunniest.time } : null, 'h'],
+      ['Sonnigster Tag', sunniest ? { value: sunniest.sunshine, date: sunniest.date } : null, 'h'],
     ] },
   ].map((g) => ({
     title: g.title,
@@ -62,18 +63,7 @@ function records(daily) {
 
 // --- Monats- und Jahrestabellen --------------------------------------------------
 
-const DAILY_FIELDS = ['outTemp', 'rain', 'sunshine'].map((k) => FIELD_MAP.get(k));
 const MONTH_FIELDS = ['outTemp', 'rain'].map((k) => FIELD_MAP.get(k));
-
-// Kenntage nach DWD-Definition
-const COUNTS = {
-  rainDays: (d) => d.rain_sum >= 1,
-  frostDays: (d) => d.outTemp_min < 0,
-  iceDays: (d) => d.outTemp_max < 0,
-  summerDays: (d) => d.outTemp_max >= 25,
-  hotDays: (d) => d.outTemp_max >= 30,
-  tropicalNights: (d) => d.outTemp_min >= 20,
-};
 
 function summarize(monthRow, days) {
   const out = {
@@ -81,10 +71,11 @@ function summarize(monthRow, days) {
     tmax: monthRow?.outTemp_max ?? null,
     tmin: monthRow?.outTemp_min ?? null,
     rain: monthRow?.rain_sum ?? null,
-    sunshine: days.length ? Math.round(days.reduce((s, d) => s + (d.sunshine_sum ?? 0), 0) / 6) / 10 : null,
+    sunshine: days.length ? Math.round(days.reduce((s, d) => s + (d.sunshine ?? 0), 0) * 10) / 10 : null,
     days: days.length,
   };
-  for (const [k, fn] of Object.entries(COUNTS)) out[k] = days.filter(fn).length;
+  // Kenntage (daytypes.js) als counts: { ice, frost, … }
+  out.counts = countTypes(days);
   return out;
 }
 
@@ -95,8 +86,8 @@ function tables(daily, span) {
 
   const byYear = new Map();
   for (const d of daily) {
-    const y = d.time.slice(0, 4);
-    const m = Number(d.time.slice(5, 7));
+    const y = d.date.slice(0, 4);
+    const m = Number(d.date.slice(5, 7));
     if (!byYear.has(y)) byYear.set(y, new Map());
     const ym = byYear.get(y);
     if (!ym.has(m)) ym.set(m, []);
@@ -115,15 +106,16 @@ function tables(daily, span) {
 
 let cache = null;
 
-/** Rekorde und Tabellen; teuer (Sonnenschein über alle Jahre), daher 10 min zwischengespeichert */
+/** Rekorde und Tabellen; Tageswerte aus dem Cache von daytypes.js, das Ergebnis 10 min zwischengespeichert */
 export function climate() {
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.data;
   const span = archiveSpan();
   const firstDay = localToUnix(localDate(span.first));
   const lastDay = localToUnix(localDate(span.last));
-  const daily = aggregateRows('day', firstDay, lastDay, span.last, DAILY_FIELDS);
+  const daily = dayValues(localDate(span.first), localDate(span.last));
   const data = {
     span: { first: localDate(span.first), last: localDate(span.last) },
+    dayTypes: dayTypeInfo(),
     records: records(daily),
     years: tables(daily, { first: firstDay, last: lastDay }),
   };

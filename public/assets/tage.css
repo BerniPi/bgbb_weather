@@ -1,0 +1,27 @@
+/* Seite „Tage“ */
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin-bottom: var(--gap); }
+.range { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.range label, .filter { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.9rem; }
+.filter select { max-width: 60vw; }
+
+#summary { margin-bottom: 12px; }
+.daytype.active { outline: 2px solid var(--c); outline-offset: 1px; font-weight: 600; }
+
+table.days {
+  border-collapse: collapse; font-size: 0.88rem; font-variant-numeric: tabular-nums; white-space: nowrap; width: 100%;
+}
+.days th, .days td { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.days th { color: var(--muted); font-weight: 600; cursor: pointer; user-select: none; vertical-align: bottom; }
+.days th small { display: block; font-weight: 400; }
+.days th[aria-sort="ascending"]::after { content: " ▲"; font-size: 0.7em; }
+.days th[aria-sort="descending"]::after { content: " ▼"; font-size: 0.7em; }
+.days th:first-child, .days td:first-child {
+  text-align: left; position: sticky; left: 0; background: var(--card); font-weight: 600;
+}
+.days td:first-child a { color: inherit; text-decoration: none; }
+.days td:first-child a:hover { text-decoration: underline; }
+.days th.types, .days td.types { text-align: left; }
+.days td.types .daytype { font-size: 0.78rem; padding: 0 8px; margin-right: 4px; }
+.days td.warm { color: var(--warm); }
+.days td.cold { color: var(--cold); }
+.days tbody tr:hover td { background: var(--bg); }

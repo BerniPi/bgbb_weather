@@ -4,6 +4,7 @@ import { setupCharts, renderSeries, renderDaily, renderLake, SERIES_IDS } from '
 import { API } from './api.js';
 import { renderLayout } from './layout.js';
 import { row, statRows } from './stats.js';
+import { dayTypeChips, daysLink } from './daytypes.js';
 
 // URL-Parameter deutsch, intern englisch wie die API
 const RANGE_PARAM = { day: 'tag', week: 'woche', month: 'monat', year: 'jahr' };
@@ -39,29 +40,25 @@ function syncUrl() {
   history.replaceState(null, '', `?${params}`);
 }
 
-function renderTiles(range, stats, daily) {
+function renderTiles(stats) {
   const tile = (label, value) => `<div><span>${label}</span><b>${value}</b></div>`;
-  const tiles = [
+  $('tiles').innerHTML = [
     tile('Mitteltemperatur', `${num(stats.outTempAvg)} °C`),
     tile('Niederschlag', `${num(stats.rain)} mm`),
+    tile('Temperatur max', `${num(stats.outTempMax?.value)} °C`),
+    tile('Temperatur min', `${num(stats.outTempMin?.value)} °C`),
     tile('Sonnenschein', `${num(stats.sunshineMinutes / 60)} h`),
     tile('Stärkste Böe', `${num(stats.windGustMax?.value, 0)} km/h`),
-  ];
-  if (daily?.length) {
-    const count = (fn) => daily.filter(fn).length;
-    tiles.push(
-      tile('Regentage (≥ 1 mm)', count((d) => d.rain_sum >= 1)),
-      tile('Frosttage (Min < 0 °C)', count((d) => d.outTemp_min < 0)),
-      tile('Sommertage (Max ≥ 25 °C)', count((d) => d.outTemp_max >= 25)),
-      tile('Hitzetage (Max ≥ 30 °C)', count((d) => d.outTemp_max >= 30)),
-    );
-  } else {
-    tiles.push(
-      tile('Temperatur max', `${num(stats.outTempMax?.value)} °C`),
-      tile('Temperatur min', `${num(stats.outTempMin?.value)} °C`),
-    );
-  }
-  $('tiles').innerHTML = tiles.join('');
+  ].join('');
+}
+
+/** Tag: Kennzeichnungen dieses Tages; Zeitraum: Anzahl je Kenntag (nur ≠ 0), verlinkt auf die Tagesliste */
+function renderDayTypes(p, types) {
+  const single = p.range === 'day';
+  $('dayTypes').innerHTML = dayTypeChips(
+    single ? types.map(({ count, ...t }) => t) : types,
+    { href: (t) => daysLink(p.first, p.last, single ? null : t.key) },
+  );
 }
 
 function renderLakeStats(s) {
@@ -94,6 +91,7 @@ async function load() {
   $('firstData').textContent = longDate(data.firstData);
 
   const empty = !data.stats;
+  renderDayTypes(p, empty ? [] : data.dayTypes);
   $('empty').hidden = !empty;
   $('content').hidden = empty;
   if (empty) return;
@@ -101,7 +99,7 @@ async function load() {
   const multiDay = p.range !== 'day';
   $('statsNote').textContent = p.last >= data.lastData && p.first <= data.lastData ? 'bis jetzt' : '';
   $('stats').innerHTML = statRows(data.stats, { multiDay });
-  renderTiles(p.range, data.stats, data.daily);
+  renderTiles(data.stats);
   renderLakeStats(data.lake.stats);
 
   const intraday = Boolean(data.series);

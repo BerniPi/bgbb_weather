@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tage – Wetter BG Blumenstraße Bregenz</title>
+  <meta name="description" content="Tageswerte der Wetterstation BG Blumenstraße mit Kenntagen wie Sommertag, Frosttag oder Tropennacht – für jeden Zeitraum seit 2018.">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/tage.css">
+  <script src="/assets/tage.js" type="module"></script>
+</head>
+<body>
+  <header class="site"></header>
+
+  <main>
+    <h1 class="page-title">Tage</h1>
+    <p class="lead">Die wichtigsten Tageswerte mit Kenntagen nach Definition des Deutschen Wetterdienstes.
+      Zeitraum wählen, nach Kenntag filtern, Spalten zum Sortieren anklicken.</p>
+
+    <section class="card controls">
+      <div class="range">
+        <label>von <input type="date" id="from" class="input"></label>
+        <label>bis <input type="date" id="to" class="input"></label>
+      </div>
+      <div class="seg presets" id="presets">
+        <button type="button" data-preset="month">Dieser Monat</button>
+        <button type="button" data-preset="30">Letzte 30 Tage</button>
+        <button type="button" data-preset="year">Dieses Jahr</button>
+        <button type="button" data-preset="lastYear">Voriges Jahr</button>
+        <button type="button" data-preset="all">Alles</button>
+      </div>
+      <label class="filter">Zeigen
+        <select id="filter" class="input"></select>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Kenntage im Zeitraum <small id="summaryNote"></small></h2>
+      <div id="summary" class="daytypes"></div>
+      <p id="noTypes" class="hint" hidden>In diesem Zeitraum gab es keine Kenntage.</p>
+      <div class="table-wrap"><table class="days" id="table"></table></div>
+      <p class="hint" id="hint"></p>
+    </section>
+  </main>
+
+  <footer class="site"></footer>
+</body>
+</html>

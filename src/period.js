@@ -4,6 +4,7 @@ import { aggregateRows } from './aggregate.js';
 import { FIELD_MAP } from './fields.js';
 import { seriesRange, archiveSpan } from './weather.js';
 import { lakeChart, lakeDays, lakeStats } from './lake.js';
+import { dayValues, dayTypeSummary } from './daytypes.js';
 import { period, localDate, addDays } from './time.js';
 
 // Tageswerte für Monats- und Jahresdiagramme
@@ -27,6 +28,8 @@ export function periodData(range, iso) {
   return {
     ...base,
     stats: statsDays(p.firstDay, p.lastDay, until),
+    // Kenntage im Zeitraum (nur vorkommende); beim Tag die Kennzeichnungen dieses Tages
+    dayTypes: dayTypeSummary(dayValues(p.first, p.last)),
     series: intraday ? seriesRange(p.firstDay, until) : null,
     daily: intraday ? null : aggregateRows('day', p.firstDay, p.lastDay, until, DAILY_FIELDS),
     lake: {

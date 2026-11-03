@@ -14,13 +14,9 @@ const MEASURES = [
   { key: 'tmin', label: 'Tiefsttemperatur', unit: '°C', digits: 1, scale: 'temp' },
   { key: 'rain', label: 'Niederschlag', unit: 'mm', digits: 0, scale: 'rain' },
   { key: 'sunshine', label: 'Sonnenstunden', unit: 'h', digits: 0, scale: 'sun' },
-  { key: 'rainDays', label: 'Regentage', unit: '', digits: 0, scale: 'rain', hint: 'Tage mit mindestens 1 mm Niederschlag' },
-  { key: 'frostDays', label: 'Frosttage', unit: '', digits: 0, scale: 'cold', hint: 'Tiefstwert unter 0 °C' },
-  { key: 'iceDays', label: 'Eistage', unit: '', digits: 0, scale: 'cold', hint: 'Höchstwert unter 0 °C' },
-  { key: 'summerDays', label: 'Sommertage', unit: '', digits: 0, scale: 'warm', hint: 'Höchstwert mindestens 25 °C' },
-  { key: 'hotDays', label: 'Hitzetage', unit: '', digits: 0, scale: 'warm', hint: 'Höchstwert mindestens 30 °C' },
-  { key: 'tropicalNights', label: 'Tropennächte', unit: '', digits: 0, scale: 'warm', hint: 'Tiefstwert mindestens 20 °C' },
 ];
+// Kenntage hängen nach dem Laden an (Definitionen vom Server)
+const DAYTYPE_SCALE = { cold: 'cold', warm: 'warm', hot: 'warm', rain: 'rain', wind: 'wind' };
 
 // Hintergrundfarbe je Wert (dezent, funktioniert hell und dunkel)
 const SCALES = {
@@ -29,6 +25,7 @@ const SCALES = {
   sun: (v, max) => `rgb(245 159 0 / ${(v / max) * 0.5})`,
   cold: (v, max) => `rgb(28 126 214 / ${(v / max) * 0.45})`,
   warm: (v, max) => `rgb(232 89 12 / ${(v / max) * 0.45})`,
+  wind: (v, max) => `rgb(47 158 68 / ${(v / max) * 0.45})`,
 };
 
 let data = null;
@@ -52,7 +49,7 @@ function renderRecords() {
 
 function renderTable() {
   const m = measure;
-  const value = (cell) => (cell == null ? null : cell[m.key]);
+  const value = (cell) => (cell == null ? null : m.count ? cell.counts[m.key] : cell[m.key]);
   const all = data.years.flatMap((y) => y.months.map(value)).filter((v) => v != null);
   const max = Math.max(...all, 1);
   const color = (v) => (v == null ? '' : ` style="background:${SCALES[m.scale](v, max)}"`);
@@ -120,7 +117,6 @@ async function loadReport() {
 // --- Start --------------------------------------------------------------------------
 
 renderLayout();
-$('measure').innerHTML = MEASURES.map((m) => `<button type="button" data-key="${m.key}">${m.label}</button>`).join('');
 $('measure').addEventListener('click', (e) => {
   const m = MEASURES.find((x) => x.key === e.target.dataset.key);
   if (m) { measure = m; renderTable(); }
@@ -130,6 +126,10 @@ $('prevMonth').addEventListener('click', () => { reportMonth = report.prev; load
 $('nextMonth').addEventListener('click', () => { reportMonth = report.next; loadReport(); });
 
 data = await getJson(API.climate);
+for (const t of data.dayTypes) {
+  MEASURES.push({ key: t.key, label: t.plural, unit: '', digits: 0, scale: DAYTYPE_SCALE[t.group], hint: `${t.label}: ${t.hint}.`, count: true });
+}
+$('measure').innerHTML = MEASURES.map((m) => `<button type="button" data-key="${m.key}">${m.label}</button>`).join('');
 $('since').textContent = longDate(data.span.first);
 $('month').min = data.span.first.slice(0, 7);
 $('month').max = todayIso().slice(0, 7);

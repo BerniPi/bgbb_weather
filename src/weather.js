@@ -5,6 +5,7 @@ import { sunshinePercent, isSunny } from './sunshine.js';
 import { localDate, startOfLocalDay, localToUnix } from './time.js';
 import { cleanRow } from './corrections.js';
 import { statsDays } from './summaries.js';
+import { dayValues, dayTypeSummary } from './daytypes.js';
 
 const COLS = `dateTime, usUnits, interval, outTemp, dewpoint, outHumidity, windchill, heatindex,
   barometer, pressure, windSpeed, windGust, windDir, windGustDir, rainRate, rain, radiation, UV`;
@@ -86,6 +87,7 @@ export function current() {
     lastSunshine: lastSunshine(now),
     sunny: isSunny(now, last.radiation),
     today: statsDays(dayStart, dayStart, now),
+    todayTypes: dayTypeSummary(dayValues(localDate(now), localDate(now))).map(({ key, label, hint }) => ({ key, label, hint })),
     lastYear: { date: localDate(lyStart), ...statsDays(lyStart, lyStart) },
   };
 }

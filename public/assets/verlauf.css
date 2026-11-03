@@ -9,6 +9,7 @@
 .pick { display: flex; gap: 6px; }
 
 .empty { color: var(--muted); }
+.marks { margin: calc(var(--gap) * -0.5) 0 var(--gap); }
 .overview { margin-bottom: var(--gap); align-items: start; }
 
 .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 12px; }

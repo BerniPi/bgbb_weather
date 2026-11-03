@@ -1,11 +1,12 @@
 // Startseite „Aktuell“
-import { $, num, signed, hm, dt, longDate, relative, compass, weatherIcon, dl, repeat, getJson } from './format.js';
+import { $, num, signed, hm, dt, longDate, relative, compass, weatherIcon, dl, repeat, getJson, todayIso } from './format.js';
 import { setupCharts, renderSeries, renderLake, SERIES_IDS } from './charts.js';
 import { API } from './api.js';
 import { isStale, almanacItems, stormWarning } from './panels.js';
 import { renderLayout } from './layout.js';
 import { subscribeLive, mergeLive } from './live.js';
 import { row, statRows } from './stats.js';
+import { dayTypeChips } from './daytypes.js';
 
 const at = (e) => (e ? hm(e.time) : '');
 const v = (e, d = 1) => num(e?.value, d);
@@ -52,6 +53,7 @@ function renderWeather(w) {
     row('Letzter Sonnenschein', w.sunny ? 'jetzt' : relative(w.lastSunshine)),
   ].join('');
 
+  $('todayTypes').innerHTML = dayTypeChips(w.todayTypes ?? [], { href: () => `/verlauf?zeitraum=tag&datum=${todayIso()}` });
   $('today').innerHTML = statRows(t);
   $('lyDate').textContent = w.lastYear?.date ? longDate(w.lastYear.date) : '';
   $('lastYear').innerHTML = statRows(w.lastYear?.outTempMax ? w.lastYear : null);

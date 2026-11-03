@@ -127,6 +127,22 @@ dl.kv dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric:
 }
 .btn:focus-visible, .seg button:focus-visible, .input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+/* Kenntage (assets/daytypes.js) */
+.daytypes { display: flex; flex-wrap: wrap; gap: 6px; }
+.daytypes:empty { display: none; }
+.daytype {
+  --c: var(--muted);
+  display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.85rem; white-space: nowrap;
+  color: var(--text); text-decoration: none; background: color-mix(in srgb, var(--c) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+}
+a.daytype:hover { background: color-mix(in srgb, var(--c) 28%, transparent); }
+.daytype[data-group="cold"] { --c: var(--cold); }
+.daytype[data-group="warm"] { --c: var(--warn); }
+.daytype[data-group="hot"] { --c: var(--warm); }
+.daytype[data-group="rain"] { --c: #1c7ed6; }
+.daytype[data-group="wind"] { --c: #2f9e44; }
+
 /* Breite Tabellen am Handy seitlich scrollbar */
 .table-wrap { overflow-x: auto; }
 

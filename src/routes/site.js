@@ -6,8 +6,10 @@ import { periodData } from '../period.js';
 import { lakeChart, lakeYear } from '../lake.js';
 import { climate, monthReport } from '../climate.js';
 import { stationStatus } from '../station.js';
-import { addDays } from '../time.js';
-import { parseDate, today, clampInt, badRequestHandler } from '../http.js';
+import { dayValues, countTypes, dayTypeInfo } from '../daytypes.js';
+import { archiveSpan } from '../weather.js';
+import { addDays, localDate } from '../time.js';
+import { parseDate, parseRange, today, clampInt, badRequestHandler } from '../http.js';
 
 export const site = express.Router();
 
@@ -33,6 +35,21 @@ site.get('/climate', (req, res) => {
 site.get('/month-report', (req, res) => {
   const month = /^\d{4}-\d{2}$/.test(req.query.month ?? '') ? req.query.month : today().slice(0, 7);
   res.json(monthReport(month));
+});
+
+// Tageswerte mit Kenntagen für die Seite „Tage“; Standard: aktueller Monat
+site.get('/days', (req, res) => {
+  const range = parseRange({ from: req.query.from ?? `${today().slice(0, 8)}01`, to: req.query.to });
+  const span = archiveSpan();
+  const days = dayValues(range.from, range.to);
+  res.json({
+    from: range.from,
+    to: range.to,
+    span: { first: localDate(span.first), last: localDate(span.last) },
+    types: dayTypeInfo(),
+    counts: countTypes(days),
+    days: days.map(({ complete, nightComplete, ...d }) => d),
+  });
 });
 
 site.get('/lake', (req, res) => {

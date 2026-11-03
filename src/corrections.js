@@ -41,6 +41,12 @@ export function dayExclusion(table) {
   return days.length ? ` AND dateTime NOT IN (${days.join(',')})` : '';
 }
 
+/** SQL-Bedingung für Abfragen direkt auf archive: Datensätze mit Fehlwert in `field` auslassen */
+export function recordExclusion(field) {
+  const times = [...byRecord].filter(([, fields]) => fields.includes(field)).map(([t]) => t);
+  return times.length ? ` AND dateTime NOT IN (${times.join(',')})` : '';
+}
+
 /** Liste für die Stationsseite */
 export function correctionList() {
   return CORRECTIONS.map(({ time, fields, reason }) => ({ time: localToUnix(time), fields, reason }));

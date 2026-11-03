@@ -60,7 +60,7 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `schema.js` | Schema von app.db (`CREATE TABLE IF NOT EXISTS`) |
 | `time.js` | Ortszeit Europe/Vienna: `localToUnix`, `localDate`, `isoLocal`, `period()` (Tag/Woche/Monat/Jahr), `addDays` |
 | `units.js` | `toDisplay(row)`: Archiv-Einheiten → °C, hPa, mm, km/h |
-| `corrections.js` | bekannte Messfehler: `cleanRow` (Umrechnung + Fehlwerte = null), `dayExclusion`/`excludedDays` für `archive_day_*` |
+| `corrections.js` | bekannte Messfehler: `cleanRow` (Umrechnung + Fehlwerte = null), `dayExclusion`/`excludedDays` für `archive_day_*`, `recordExclusion` für SQL direkt auf `archive` |
 | `fields.js` | Messgrößen der API: Schlüssel, Bezeichnung, Einheit, Kennwerte (`avg/min/max/sum`) |
 | `sunshine.js` | Sonnenschein-Schätzung aus Strahlung (Formel der alten `lib.php`), Cache je Stunde |
 | `astro.js` | `almanac()`, `sunTimes()` |
@@ -68,14 +68,15 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 | `summaries.js` | `statsDays()` Extremwerte mit Zeitpunkt aus `archive_day_*`; `convert`, `prepared`, `sunshineByDay` |
 | `aggregate.js` | `archiveRows()` (roh), `aggregateRows()` (hour/day/month/year), `columns()` – für API, Export **und** Verlauf |
 | `period.js` | `periodData()` für die Verlaufsseite |
-| `climate.js` | `climate()` Rekorde + Monats-/Jahrestabellen (10 min Cache), `monthReport()` |
+| `daytypes.js` | Kenntage: `DAY_TYPES` (Definitionen), `dayValues(von, bis)` Tageswerte + Kenntage (abgeschlossene Tage im Speicher-Cache), `countTypes`, `dayTypeSummary` |
+| `climate.js` | `climate()` Rekorde + Monats-/Jahrestabellen (Tageswerte aus `daytypes.js`, 10 min Cache), `monthReport()` |
 | `lake.js` | Bodensee: `saveLake`, `lakeNow`, `lakeDays`, `lakeChart`, `lakeStats`, `lakeYear`, `floodLevels` |
 | `storm.js` | Sturmwarnung: `parseStormPage`, `saveStorm`, `storm` |
 | `station.js` | `stationStatus()`: letzte Messung, Empfang/Batterie 24 h, letzte Abrufe, Korrekturen |
 | `live.js` | Livewerte: MQTT (weewx-mqtt) oder Simulator → `normalize` → SSE an alle Browser (`liveStream`) |
 | `jobs.js` | Abrufe alle 15 min (Bodensee) / 5 min (Sturm); nur holen, speichern in lake.js/storm.js |
 | `http.js` | `parseDate`, `parseRange`, `clampInt`, `BadRequest` + Handler (400) |
-| `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/lake-year`, `/climate`, `/month-report`, `/station` – für die eigenen Seiten |
+| `routes/site.js` | `/api/site/series`, `/period`, `/lake`, `/lake-year`, `/climate`, `/month-report`, `/days`, `/station` – für die eigenen Seiten |
 | `routes/v1.js` | öffentliche API, CSV/JSON-Ausgabe, Rate-Limit |
 
 **Regel:** Jedes Fachmodul besitzt seine Tabellen (Lesen und Schreiben). Neue Abfragen dorthin, nicht in Routen.
@@ -84,7 +85,7 @@ liefert `public/` statisch (`/verlauf` → `verlauf.html`).
 
 | Endpunkt | Beschreibung |
 |----------|--------------|
-| `current` | aktuelle Werte, `today`/`lastYear` (Extremwerte), Bodensee, Sturm, Sonne/Mond |
+| `current` | aktuelle Werte, `today`/`lastYear` (Extremwerte), `todayTypes` (Kenntage heute), Bodensee, Sturm, Sonne/Mond |
 | `data?from&to&interval&fields&format` | `interval` raw/hour/day/month/year; `format=csv`, `csv=de` (Excel), `download=1`, `preview=n` |
 | `lake?from&to` | Bodensee-Tageswerte |
 | `almanac?date` | Sonne und Mond |
@@ -102,6 +103,7 @@ Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain
 | `verlauf.html` + `assets/verlauf.*` | Verlauf, URL `?zeitraum=tag|woche|monat|jahr&datum=JJJJ-MM-TT` |
 | `bodensee.html` + `assets/bodensee.*` | Bodensee: aktuell, Jahresvergleich (`?jahr=`), historischer Bereich, Hochwasser |
 | `klima.html` + `assets/klima.*` | Rekorde, Monats-/Jahrestabelle mit Kenntagen, Monatsbericht |
+| `tage.html` + `assets/tage.*` | Tageswerte mit Kenntagen, URL `?von=&bis=&kenntag=<key|any>`, Filter, Sortierung |
 | `export.html` + `assets/export.*` | Export |
 | `station.html` + `assets/station.*` | Station: Zustand (live), Standort, Messgeräte, Technik, Hinweise, Korrekturen |
 | `api.html` + `assets/apidoc.*` | API-Doku (Feldtabelle live aus `/api/v1/fields`) |
@@ -111,6 +113,7 @@ Spalten: raw = Feldname (`outTemp`), sonst `feld_kennwert` (`outTemp_avg`, `rain
 | `assets/layout.js` | Kopf/Navigation/Fuß; neue Seite hier eintragen (`soon: true` = ausgegraut) |
 | `assets/charts.js` | alle Diagramme: `renderSeries`, `renderDaily`, `renderLake`, `renderLakeYear` (+ Hochwasserlinien), `SERIES_IDS` |
 | `assets/stats.js` | Statistik-Tabelle (`statRows`) |
+| `assets/daytypes.js` | Kenntage als Chips (`dayTypeChips`), `daysLink` → Seite Tage; Styles `.daytype` in `site.css` |
 | `assets/live.js` + `live.css` | `subscribeLive`, `mergeLive` (ersetzt aktuelle Werte, nicht Böe/Tageswerte), „live“-Kennzeichen |
 | `assets/panels.js` | Sonne/Mond (`almanacItems`), Sturmwarnung, `isStale` – Startseite und Kiosk |
 | `assets/site.css` | Design-Tokens, Hell/Dunkel, Karten, Tabellen, Steuerelemente (`.btn`, `.seg`, `.input`, `.table-wrap`) |
@@ -158,8 +161,13 @@ Spalten ändern → Schema anpassen und `npm run migrate` bzw. Tabelle per Hand 
 - **Sturmwarnung:** Seite kttg.ch, drei Regionen; gezählt wird Region Ost (Bregenz). 40 = Starkwind, 90 = Sturm.
 - **Messfehler** stehen in `corrections.js` (z. B. Böe 174 km/h am 16.05.2022 07:55). Neue Fehler dort eintragen;
   5-min-Werte werden null, Min/Max des Tages zählen nicht. Alle Datensätze daher über `cleanRow` lesen, nie `toDisplay` direkt.
-- **Kenntage** (Klima): Regentag ≥ 1 mm, Frosttag Min < 0 °C, Eistag Max < 0 °C, Sommertag Max ≥ 25 °C,
-  Hitzetag Max ≥ 30 °C, Tropennacht Min ≥ 20 °C. Langjährige Mittel nur aus vollständigen Monaten/Jahren.
+- **Kenntage** (DWD-Glossar), nur in `daytypes.js` definiert – Verlauf, Startseite, Klima und Tage nutzen sie:
+  Eistag Max < 0 °C, Frosttag Min < 0 °C, Sommertag Max ≥ 25 °C, Heißer Tag Max ≥ 30 °C,
+  Tropennacht Min 18–06 UTC ≥ 20 °C (aus 5-min-Werten; zählt für das Datum des Morgens),
+  Regentag ≥ 1 mm (DWD: 0,1 mm; bewusst 1 mm wegen Tau/Einzelkippungen),
+  Sturmtag 10-min-Mittel ≥ 8 Bft = 62 km/h (zwei aufeinanderfolgende 5-min-Mittel).
+  Eistag und Tropennacht erst, wenn Tag bzw. Nacht vorbei ist. Nicht messbar (Bewölkung, Gewitter, Nebel, Schnee): fehlen.
+  Erster Aufruf über den ganzen Zeitraum ~6 s (Sonnenschein), danach Cache. Langjährige Mittel nur aus vollständigen Monaten/Jahren.
 - **`inTemp`** ist die Temperatur im Empfänger (Schaufenster), keine Raum- oder Außentemperatur.
 - **Datenstand lokal:** Kopie endet zum Zeitpunkt des Kopierens → Banner „Keine aktuellen Messdaten“ ist dann korrekt.
 - **Vorschau im Claude-Desktop-Browser:** Server selbst starten (`npm run dev`) und `http://localhost:8080` öffnen
